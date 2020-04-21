@@ -23,6 +23,12 @@ namespace Azure.Data
             if (_json.ValueKind != JsonValueKind.Object) throw new InvalidOperationException("JSON is not an object");
         }
 
+        public ReadOnlyJsonData(JsonElement jsonObject)
+        {
+            if (_json.ValueKind != JsonValueKind.Object) throw new InvalidOperationException("JSON is not an object");
+            _json = jsonObject;
+        }
+
         public override bool IsReadOnly => true;
 
         protected override IEnumerable<string> PropertyNames {
@@ -41,25 +47,99 @@ namespace Azure.Data
 
         protected override bool TryGetPropertyCore(string propertyName, out object propertyValue)
         {
-            if (!_json.TryGetProperty(propertyName, out var element))
+            if (!_json.TryGetProperty(propertyName, out JsonElement element))
             {
                 propertyValue = default;
                 return false;
             }
 
-            // TODO: this needs to be finished
             switch (element.ValueKind)
             {
                 case JsonValueKind.String:
                     propertyValue = element.GetString();
                     break;
+                case JsonValueKind.False:
+                    propertyValue = false;
+                    break;
+                case JsonValueKind.True:
+                    propertyValue = true;
+                    break;
+                case JsonValueKind.Null:
+                    propertyValue = null;
+                    break;
+                case JsonValueKind.Object:
+                    propertyValue = new ReadOnlyJsonData(element);
+                    break;
                 case JsonValueKind.Number:
-                    if (element.TryGetInt32(out var value))
+                    // TODO: is this what we want? i.e. we return the smallest integer if the value fits, the floats, the decimal.
+                    if (element.TryGetUInt64(out var ulongValue))
                     {
-                        propertyValue = value;
+                        if (ulongValue <= uint.MaxValue)
+                        {
+                            if (ulongValue <= ushort.MaxValue)
+                            {
+                                if (ulongValue <= byte.MaxValue) {
+                                    propertyValue = (byte)ulongValue;
+                                    break;
+                                }
+
+                                propertyValue = (ushort)ulongValue;
+                                break;
+                            }
+
+                            propertyValue = (uint)ulongValue;
+                            break;
+                        }
+
+                        propertyValue = ulongValue;
                         break;
                     }
-                    else throw new NotImplementedException();
+
+                    // the value is negative
+                    if (element.TryGetInt64(out var longValue))
+                    {
+                        if (longValue >= int.MinValue)
+                        {
+                            if (longValue >= short.MinValue)
+                            {
+                                if (longValue >= sbyte.MinValue)
+                                {
+                                    propertyValue = (sbyte)longValue;
+                                    break;
+                                }
+
+                                propertyValue = (short)longValue;
+                                break;
+                            }
+
+                            propertyValue = (int)longValue;
+                            break;
+                        }
+
+                        propertyValue = longValue;
+                        break;
+                    }
+
+                    if (element.TryGetSingle(out var singleValue))
+                    {
+                        propertyValue = singleValue;
+                        break;
+                    }
+
+                    if (element.TryGetDouble(out var doubleValue))
+                    {
+                        propertyValue = doubleValue;
+                        break;
+                    }
+
+                    if (element.TryGetDecimal(out var decimalValue)) {
+                        propertyValue = decimalValue;
+                        break;
+                    }
+                    throw new NotImplementedException(); // this should never happen
+                case JsonValueKind.Array:
+                    // what do we do here? Deserialize all the values?
+                    throw new NotImplementedException(); // TODO: this needs to be finished
                 default:
                     throw new NotImplementedException();
             }

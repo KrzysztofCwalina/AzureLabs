@@ -12,7 +12,7 @@ namespace Azure.Data
 {
     public abstract class DynamicData : IDynamicMetaObjectProvider, IEnumerable<string>
     {
-        static DynamicData s_empty = (DynamicData)new ReadOnlyDictionaryData();
+        static DynamicData s_empty = new ReadOnlyDictionaryData();
 
         internal DynamicData() { }         // internal, as we don't want to make it publicly extensible yet.
 
