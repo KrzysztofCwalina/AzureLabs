@@ -77,7 +77,7 @@ namespace Azure.Data
         private object ConvertTo(Type toType)
         {
             if (TryConvertToCore(toType, out var result)) return result;
-            throw new Exception();
+            throw new InvalidCastException($"Cannot cast to {toType}.");
         }
 
         private class MetaObject : DynamicMetaObject
@@ -128,7 +128,7 @@ namespace Azure.Data
 
         protected virtual DynamicData FromComplex(object obj)
         {
-            if (IsPrimitive(obj)) throw new ArgumentException("Argument passed to obj is not a primitive");
+            if (IsPrimitive(obj)) throw new ArgumentException("Argument passed to obj is a primitive");
 
             var result = obj as DynamicData;
             if (result != null) return result;
@@ -141,7 +141,7 @@ namespace Azure.Data
             {
                 string name = property.Name;
                 object value = property.GetValue(obj);
-                if (!IsPrimitive(value)) value = FromComplex(value);
+                if (!IsPrimitive(value)) value = FromComplex(value); // TODO: what about cycles?
                 properties[name] = value;
             }
 
