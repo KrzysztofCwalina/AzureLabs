@@ -68,7 +68,8 @@ namespace Azure.Data
             EnsureNotReadOnly();
             if (!IsPrimitive(propertyValue))
             {
-                propertyValue = FromComplex(propertyValue);
+                int debth = 10;
+                propertyValue = FromComplex(propertyValue, ref debth);
             }
             SetPropertyCore(propertyName, propertyValue);
             return propertyValue;
@@ -126,8 +127,12 @@ namespace Azure.Data
             }
         }
 
-        protected virtual DynamicData FromComplex(object obj)
+        protected abstract DynamicData CreateCore((string propertyName, object value)[] properties);
+
+        private DynamicData FromComplex(object obj, ref int debth)
         {
+            if (debth-- < 0) throw new InvalidOperationException("Object grath too deep");
+
             if (IsPrimitive(obj)) throw new ArgumentException("Argument passed to obj is a primitive");
 
             var result = obj as DynamicData;
@@ -135,33 +140,29 @@ namespace Azure.Data
 
             var type = obj.GetType();
 
-            var objectProperties = type.GetProperties();
-            var properties = new Dictionary<string, object>(objectProperties.Length);
-            foreach (var property in objectProperties)
+            var objectProperties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
+            var properties = new (string, object)[objectProperties.Length];
+            for(int i=0; i< objectProperties.Length; i++)
             {
+                var property = objectProperties[i];
                 string name = property.Name;
                 object value = property.GetValue(obj);
-                if (!IsPrimitive(value)) value = FromComplex(value); // TODO: what about cycles?
-                properties[name] = value;
+                if (!IsPrimitive(value)) value = FromComplex(value, ref debth); // TODO: what about cycles?
+                properties[i] = (name, value);
             }
 
-            if (IsReadOnly)
-            {
-                return new ReadOnlyDictionaryData(properties);
-            }
-            else
-            {
-                return new ReadWriteDictionaryData(properties);
-            }
+            return CreateCore(properties);
         }
 
         // TODO: this needs to be fixed
         // primitives are: Boolean, Byte, SByte, Int16, UInt16, Int32, UInt32, Int64, UInt64, IntPtr, UIntPtr, Char, Double, and Single.
+        // What about: decimal, DateTime, DateTimeOffset, TimeSpan
         private bool IsPrimitive(object obj)
         {
             var type = obj.GetType();
             if (type == typeof(string)) return true;
             if (type.IsPrimitive) return true;
+            if (type == typeof(decimal)) return true;
             return false;
         }
 

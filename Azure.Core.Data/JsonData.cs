@@ -31,6 +31,9 @@ namespace Azure.Data
 
         public override bool IsReadOnly => true;
 
+        protected override DynamicData CreateCore((string propertyName, object value)[] properties)
+            => new ReadOnlyDictionaryData(properties); // TODO: is this OK?
+
         protected override IEnumerable<string> PropertyNames {
             get {
                 if (_json.ValueKind == JsonValueKind.Object)

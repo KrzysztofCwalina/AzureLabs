@@ -24,7 +24,10 @@ namespace Azure.Data.Tests
             b.Other = a;
 
             dynamic d = DynamicData.Create();
-            d.Property = a;
+
+            Assert.Throws<InvalidOperationException>(() => {
+                d.Property = a;
+            });
         }
 
         class Foo

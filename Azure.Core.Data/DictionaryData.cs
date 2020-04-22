@@ -30,6 +30,9 @@ namespace Azure.Data
 
         public override bool IsReadOnly => true;
 
+        protected override DynamicData CreateCore((string propertyName, object value)[] properties)
+            => new ReadOnlyDictionaryData(properties);
+
         protected override void SetPropertyCore(string propertyName, object propertyValue) => ThrowReadOnlyException();
 
         protected override bool TryGetPropertyCore(string propertyName, out object propertyValue) => _properties.TryGetValue(propertyName, out propertyValue);
@@ -88,6 +91,9 @@ namespace Azure.Data
         }
 
         public override bool IsReadOnly => false;
+
+        protected override DynamicData CreateCore((string propertyName, object value)[] properties)
+            => new ReadWriteDictionaryData(properties);
 
         protected override void SetPropertyCore(string propertyName, object propertyValue)
         {
