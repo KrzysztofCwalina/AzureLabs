@@ -91,17 +91,6 @@ namespace Azure.Data.Tests
         }
 
         [Test]
-        public void ComplexArray2()
-        {
-            var data = "[{\"Foo\":10 },{\"Foo\":20}]";
-            dynamic array = DynamicData.CreateFromJson(data);
-            var dynamicArray = (dynamic[])array;
-
-            dynamic firstNext = dynamicArray[0];
-            Assert.AreEqual(10, firstNext.Foo);
-        }
-
-        [Test]
         public void AnonymousValue()
         {
             dynamic contact = DynamicData.Create();

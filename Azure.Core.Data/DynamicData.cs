@@ -151,12 +151,24 @@ namespace Azure.Data
         {
             EnsureNotReadOnly();
             var valueType = propertyValue.GetType();
+
             if (!IsPrimitive(valueType) && !IsPrimitiveArray(valueType))
             {
-                if (valueType.IsArray) throw new NotImplementedException();
-
                 int debth = 100; // TODO: is this a good default? Should it be configurable?
-                propertyValue = FromComplex(propertyValue, ref debth);
+                if (valueType.IsArray)
+                {
+                    object[] array = (object[])propertyValue;
+                    DynamicData[] result = new DynamicData[array.Length];
+                    for (int i = 0; i < array.Length; i++)
+                    {
+                        result[i] = FromComplex(array[i], ref debth);
+                    }
+                    propertyValue = result;
+                }
+                else
+                {
+                    propertyValue = FromComplex(propertyValue, ref debth);
+                }
             }
             SetPropertyCore(propertyName, propertyValue);
             return propertyValue;
@@ -194,7 +206,7 @@ namespace Azure.Data
                     var property = objectProperties[i];
                     string name = property.Name;
                     object value = property.GetValue(obj);
-                    if (!IsPrimitive(value.GetType())) value = FromComplex(value, ref allowedDebth);
+                    if (value != null && !IsPrimitive(value.GetType())) value = FromComplex(value, ref allowedDebth);
                     properties[i] = (name, value);
                 }
 

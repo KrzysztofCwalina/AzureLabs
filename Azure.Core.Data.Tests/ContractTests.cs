@@ -20,8 +20,8 @@ namespace Azure.Data.Tests
             // graph with a cycle
             var a = new Foo();
             var b = new Foo();
-            a.Other = b;
-            b.Other = a;
+            a.FooProperty = b;
+            b.FooProperty = a;
 
             dynamic d = DynamicData.Create();
 
@@ -47,7 +47,7 @@ namespace Azure.Data.Tests
 
         class Foo
         {
-            public Foo Other { get; set; }
+            public Foo FooProperty { get; set; }
         }
     }
 }
