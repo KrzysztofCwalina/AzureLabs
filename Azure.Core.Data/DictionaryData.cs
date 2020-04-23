@@ -16,6 +16,10 @@ namespace Azure.Data
 
         // TODO: This is a backdoor for complext object. How many more of these we have? 
         public ReadOnlyDictionaryData(params (string propertyName, object propertyValue)[] properties)
+            : this(properties.AsSpan()) 
+        { }
+
+        public ReadOnlyDictionaryData(ReadOnlySpan<(string propertyName, object propertyValue)> properties)
         {
             Debug.Assert(properties.Length > 0); // use ReadOnlyDictionaryData.Empty instead.
             var dictionary = new Dictionary<string, object>(properties.Length);
@@ -30,7 +34,7 @@ namespace Azure.Data
 
         public override bool IsReadOnly => true;
 
-        protected override DynamicData CreateCore((string propertyName, object value)[] properties)
+        protected override DynamicData CreateCore(ReadOnlySpan<(string propertyName, object propertyValue)> properties)
             => new ReadOnlyDictionaryData(properties);
 
         protected override void SetPropertyCore(string propertyName, object propertyValue) => ThrowReadOnlyException();
@@ -60,7 +64,7 @@ namespace Azure.Data
             }
         }
 
-        protected override IEnumerable<string> PropertyNames => _properties.Keys;
+        public override IEnumerable<string> PropertyNames => _properties.Keys;
 
         #region IDictionary Implementation
         IEnumerator<KeyValuePair<string, object>> IEnumerable<KeyValuePair<string, object>>.GetEnumerator() => _properties.GetEnumerator();
@@ -82,17 +86,22 @@ namespace Azure.Data
         public ReadWriteDictionaryData(IDictionary<string, object> properties) => _properties = properties;
 
         public ReadWriteDictionaryData(params (string propertyName, object propertyValue)[] properties)
+            : this(properties.AsSpan())
+        { }
+
+        public ReadWriteDictionaryData(ReadOnlySpan<(string propertyName, object propertyValue)> properties)
         {
-            _properties = new Dictionary<string, object>(properties.Length);
+            var dictionary = new Dictionary<string, object>(properties.Length);
             foreach (var property in properties)
             {
-                _properties.Add(property.propertyName, property.propertyValue);
+                dictionary.Add(property.propertyName, property.propertyValue);
             }
+            _properties = dictionary;
         }
 
         public override bool IsReadOnly => false;
 
-        protected override DynamicData CreateCore((string propertyName, object value)[] properties)
+        protected override DynamicData CreateCore(ReadOnlySpan<(string propertyName, object propertyValue)> properties)
             => new ReadWriteDictionaryData(properties);
 
         protected override void SetPropertyCore(string propertyName, object propertyValue)
@@ -105,7 +114,7 @@ namespace Azure.Data
         protected override bool TryConvertToCore(Type type, out object converted)
             => ReadOnlyDictionaryData.TryConvertTo(_properties, type, out converted);
 
-        protected override IEnumerable<string> PropertyNames => _properties.Keys;
+        public override IEnumerable<string> PropertyNames => _properties.Keys;
 
         #region IDictionary Implementation
         void IDictionary<string, object>.Add(string key, object value)

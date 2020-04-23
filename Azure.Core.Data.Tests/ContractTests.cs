@@ -25,9 +25,24 @@ namespace Azure.Data.Tests
 
             dynamic d = DynamicData.Create();
 
+            // TODO: should this throw?
             Assert.Throws<InvalidOperationException>(() => {
                 d.Property = a;
             });
+        }
+
+        [Test]
+        public void PrimitiveArray()
+        {
+            dynamic a = DynamicData.Create();
+            a.Items = new int[] { 1, 2, 3 };
+        }
+
+        [Test]
+        public void ComplexArray()
+        {
+            dynamic a = DynamicData.Create();
+            a.Items = new Foo[] { new Foo() };
         }
 
         class Foo

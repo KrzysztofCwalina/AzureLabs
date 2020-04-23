@@ -24,7 +24,7 @@ namespace Azure.Data.Tests
         public void FromJson()
         {
             var data = "{ \"First\" : \"John\", \"Last\" : \"Smith\" }";
-            dynamic contact = DynamicData.FromJson(data);
+            dynamic contact = DynamicData.CreateFromJson(data);
             Assert.AreEqual("John", contact.First);
             Assert.AreEqual("Smith", contact.Last);
 

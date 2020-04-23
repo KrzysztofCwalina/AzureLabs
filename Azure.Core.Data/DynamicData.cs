@@ -7,6 +7,10 @@ using System.Collections;
 using System;
 using System.IO;
 using System.Reflection;
+using System.Buffers;
+using System.Threading.Tasks;
+using System.Threading;
+using System.Diagnostics;
 
 namespace Azure.Data
 {
@@ -14,7 +18,7 @@ namespace Azure.Data
     {
         static DynamicData s_empty = new ReadOnlyDictionaryData();
 
-        internal DynamicData() { }         // internal, as we don't want to make it publicly extensible yet.
+        internal DynamicData() { } // internal, as we don't want to make it publicly extensible yet.
 
         public static DynamicData Create(params (string propertyName, object propertyValue)[] properties)
             => new ReadWriteDictionaryData(properties);
@@ -25,18 +29,28 @@ namespace Azure.Data
             return new ReadOnlyDictionaryData(properties);
         }
 
-        public static DynamicData FromDictionary(IDictionary<string, object> properties) => new ReadWriteDictionaryData(properties);
-        public static DynamicData FromReadOnlyDictionary(IReadOnlyDictionary<string, object> properties) => new ReadOnlyDictionaryData(properties);
-        public static DynamicData FromJson(string jsonObject) => new ReadOnlyJsonData(jsonObject);
-        public static DynamicData FromJson(Stream jsonObject) => new ReadOnlyJsonData(jsonObject);
+        public static DynamicData CreateFromDictionary(IDictionary<string, object> properties) => new ReadWriteDictionaryData(properties);
+        public static DynamicData CreateFromDictionary(IReadOnlyDictionary<string, object> properties) => new ReadOnlyDictionaryData(properties);
+        public static DynamicData CreateFromJson(string jsonObject) => new ReadOnlyJsonData(jsonObject);
+        public static DynamicData CreateFromJson(Stream jsonObject) => new ReadOnlyJsonData(jsonObject);
+
+        public static Task<DynamicData> CreateFromJsonAsync(Stream jsonObject, CancellationToken cancellationToken = default) => ReadOnlyJsonData.CreateAsync(jsonObject, cancellationToken);
 
         #region Abstract Members
+        public abstract bool IsReadOnly { get; }
+        public abstract IEnumerable<string> PropertyNames { get; }
         protected abstract void SetPropertyCore(string propertyName, object propertyValue);
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="propertyName"></param>
+        /// <param name="propertyValue"></param>
+        /// <returns></returns>
+        /// <remarks>When implemented, propertyValue has to be either a primitive (see IsPrimitive), or a DynamicData instance.</remarks>
         protected abstract bool TryGetPropertyCore(string propertyName, out object propertyValue);
         protected abstract bool TryConvertToCore(Type type, out object converted);
-
-        protected abstract IEnumerable<string> PropertyNames { get; }
-        public abstract bool IsReadOnly { get; }
+        protected abstract DynamicData CreateCore(ReadOnlySpan<(string propertyName, object propertyValue)> properties);
         #endregion
 
         public object this[string propertyName] {
@@ -56,7 +70,7 @@ namespace Azure.Data
         {
             if (TryGetPropertyCore(propertyName, out object value))
             {
-                if (IsPrimitive(value)) return value;
+                if (IsPrimitive(value.GetType())) return value;
                 if (value is DynamicData) return value;
                 else throw new Exception("TryGetPropertyCore returned invalid object");
             }
@@ -66,8 +80,11 @@ namespace Azure.Data
         private object SetProperty(string propertyName, object propertyValue)
         {
             EnsureNotReadOnly();
-            if (!IsPrimitive(propertyValue))
+            var valueType = propertyValue.GetType();
+            if (!IsPrimitive(valueType) && !IsPrimitiveArray(valueType))
             {
+                if (valueType.IsArray) throw new NotImplementedException();
+
                 int debth = 10;
                 propertyValue = FromComplex(propertyValue, ref debth);
             }
@@ -127,42 +144,50 @@ namespace Azure.Data
             }
         }
 
-        protected abstract DynamicData CreateCore((string propertyName, object value)[] properties);
-
-        private DynamicData FromComplex(object obj, ref int debth)
+        private DynamicData FromComplex(object obj, ref int allowedDebth)
         {
-            if (debth-- < 0) throw new InvalidOperationException("Object grath too deep");
+            if (--allowedDebth < 0) throw new InvalidOperationException("Object grath too deep");
 
-            if (IsPrimitive(obj)) throw new ArgumentException("Argument passed to obj is a primitive");
+            var type = obj.GetType();
+            Debug.Assert(!IsPrimitive(type));
+            Debug.Assert(!IsPrimitiveArray(type));
 
             var result = obj as DynamicData;
             if (result != null) return result;
 
-            var type = obj.GetType();
-
             var objectProperties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
-            var properties = new (string, object)[objectProperties.Length];
-            for(int i=0; i< objectProperties.Length; i++)
+            (string, object)[] properties = ArrayPool<(string, object)>.Shared.Rent(objectProperties.Length);
+            try
             {
-                var property = objectProperties[i];
-                string name = property.Name;
-                object value = property.GetValue(obj);
-                if (!IsPrimitive(value)) value = FromComplex(value, ref debth); // TODO: what about cycles?
-                properties[i] = (name, value);
-            }
+                for (int i = 0; i < objectProperties.Length; i++)
+                {
+                    var property = objectProperties[i];
+                    string name = property.Name;
+                    object value = property.GetValue(obj);
+                    if (!IsPrimitive(value.GetType())) value = FromComplex(value, ref allowedDebth); // TODO: what about cycles?
+                    properties[i] = (name, value);
+                }
 
-            return CreateCore(properties);
+                return CreateCore(properties.AsSpan(0, objectProperties.Length));
+            }
+            finally
+            {
+                if (properties != null) ArrayPool<(string, object)>.Shared.Return(properties);
+            }
         }
 
         // TODO: this needs to be fixed
         // primitives are: Boolean, Byte, SByte, Int16, UInt16, Int32, UInt32, Int64, UInt64, IntPtr, UIntPtr, Char, Double, and Single.
         // What about: decimal, DateTime, DateTimeOffset, TimeSpan
-        private bool IsPrimitive(object obj)
+        private bool IsPrimitive(Type type)
         {
-            var type = obj.GetType();
             if (type == typeof(string)) return true;
             if (type.IsPrimitive) return true;
-            if (type == typeof(decimal)) return true;
+            return false;
+        }
+        private bool IsPrimitiveArray(Type type)
+        {
+            if (type.IsArray && IsPrimitive(type.GetElementType())) return true;
             return false;
         }
 

@@ -2,6 +2,8 @@
 using System;
 using System.IO;
 using System.Text.Json;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace Azure.Data
 {
@@ -16,11 +18,17 @@ namespace Azure.Data
             if (_json.ValueKind != JsonValueKind.Object) throw new InvalidOperationException("JSON is not an object");
         }
 
-        public ReadOnlyJsonData(Stream json)
+        public ReadOnlyJsonData(Stream jsonObject)
         {
-            var document = JsonDocument.Parse(json);
+            var document = JsonDocument.Parse(jsonObject);
             _json = document.RootElement;
             if (_json.ValueKind != JsonValueKind.Object) throw new InvalidOperationException("JSON is not an object");
+        }
+
+        public static async Task<DynamicData> CreateAsync(Stream json, CancellationToken cancellationToken)
+        {
+            var document = await JsonDocument.ParseAsync(json, default, cancellationToken).ConfigureAwait(false);
+            return new ReadOnlyJsonData(document.RootElement);
         }
 
         public ReadOnlyJsonData(JsonElement jsonObject)
@@ -31,10 +39,10 @@ namespace Azure.Data
 
         public override bool IsReadOnly => true;
 
-        protected override DynamicData CreateCore((string propertyName, object value)[] properties)
-            => new ReadOnlyDictionaryData(properties); // TODO: is this OK?
+        protected override DynamicData CreateCore(ReadOnlySpan<(string propertyName, object propertyValue)> properties)
+            => new ReadOnlyDictionaryData(properties); // TODO: is this OK that it creates a defferent type?
 
-        protected override IEnumerable<string> PropertyNames {
+        public override IEnumerable<string> PropertyNames {
             get {
                 if (_json.ValueKind == JsonValueKind.Object)
                 {
