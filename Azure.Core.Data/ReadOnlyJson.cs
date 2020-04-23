@@ -25,6 +25,13 @@ namespace Azure.Data
 
         }
 
+        public ReadOnlyJson(ReadOnlyJson copy)
+        {
+            _json = copy._json;
+            _originalData = copy._originalData;
+            _deserialized = copy._deserialized;
+        }
+
         private void Deserialize()
         {
             Debug.Assert(_deserialized == false);

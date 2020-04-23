@@ -1,28 +1,71 @@
 using NUnit.Framework;
+using System;
 
 namespace Azure.Data.Tests
 {
     public class DigitalTwinsTests
     {
-        [Test]
-        public void DigitalTwins()
-        {
-            var json =
+        static string s_demo_payload =
             "{" +
-            "\"service_defined_1\" : \"some value\"," +
-            "\"service_defined_2\" : 123," +
-            "\"service_defined_3\" : true," +
-            "\"user_defined_1\" : \"hi\"," +
-            "\"user_defined_2\" : \"hello\"" +
+            "\"Id\" : \"ID0001\"," +        // service defined
+            "\"CreatedAt\" : 123," +        // service defined
+            "\"Decomissioned\" : true," +   // service defined
+
+            "\"Temperature\" : 72," +       // user defined
+            "\"Unit\" : \"F\"" +            // user defined
             "}";
 
-            var twin = new UserDefinedTwin(json);
+        [Test]
+        public void ClientDemo()
+        {
+            var client = new DigitalTwinsClient();
+
+            DigitalTwin twin = client.GetTwin(); // creates DigitalTwin instance and stores the JSON payload in it, i.e. very cheap
+            string json = twin.ToString();       // gets the origin JSON payload.
+            Assert.IsTrue(ReferenceEquals(s_demo_payload, json)); // the payload is really the same string as was passed into DigitalTwin ctor
+
+            Assert.AreEqual("ID0001", twin.Id);  // this is where the JSON string is parsed (lazily)
+            Assert.AreEqual(123, twin.CreatedAt);
+            Assert.AreEqual(true, twin.Decomissioned);
+
+            // Temperature and Unit are not on DigitaTwin (they are user defined properties), so let's use dynamic APIs.
+            dynamic dynamic = twin;
+
+            Assert.AreEqual(72, dynamic.Temperature); 
+            Assert.AreEqual("F", dynamic.Unit);
+            Assert.AreEqual(123, dynamic.CreatedAt); // the service defined properties are also avaliable through dynamic calls.
+
+            // the client also has strongly typed APIs
+            TemperatureSensor udt = client.GetTwin<TemperatureSensor>();
+
+            Assert.AreEqual("F", udt.Unit);
+            Assert.AreEqual(72, udt.Temperature);
+            Assert.AreEqual("ID0001", udt.Id);
+            Assert.AreEqual(123, udt.CreatedAt);
+            Assert.AreEqual(true, udt.Decomissioned);
+
+            // Interestingly, the base twin type can be converted to user defined type
+            udt = twin.As<TemperatureSensor>();
+
+            Assert.AreEqual("F", udt.Unit);
+            Assert.AreEqual(72, udt.Temperature);
+
+            Assert.AreEqual("ID0001", udt.Id);
+            Assert.AreEqual(123, udt.CreatedAt);
+            Assert.AreEqual(true, udt.Decomissioned);
+        }
+
+        [Test]
+        public void DynamicTypeSystemDemo()
+        {
+            var twin = new TemperatureSensor(s_demo_payload);
 
             string original = twin.ToString();
-            Assert.IsTrue(ReferenceEquals(json, original));
+            Assert.IsTrue(ReferenceEquals(s_demo_payload, original));
 
-            Assert.AreEqual(123, twin["service_defined_2"]);
-            Assert.AreEqual("hi", twin["user_defined_1"]);
+            Assert.AreEqual(123, twin["CreatedAt"]);
+            Assert.AreEqual(72, twin["Temperature"]);
+            Assert.AreEqual("F", twin["Unit"]);
 
             int numberOfProperties = 0;
             foreach(string property in twin.PropertyNames)
@@ -31,27 +74,45 @@ namespace Azure.Data.Tests
             }
             Assert.AreEqual(5, numberOfProperties);
 
-            dynamic dynamic = new ReadOnlyJson(json);
-            Assert.AreEqual(123, dynamic.service_defined_2);
-            Assert.AreEqual("hi", dynamic.user_defined_1);
+            dynamic dynamic = new ReadOnlyJson(s_demo_payload);
+            Assert.AreEqual(72, dynamic.Temperature);
+            Assert.AreEqual("F", dynamic.Unit);
+            Assert.AreEqual("ID0001", dynamic.Id);
 
-            Assert.AreEqual(123, twin.service_defined_2);
-            Assert.AreEqual("hi", twin.user_defined_1);
+            Assert.AreEqual(123, twin.CreatedAt);
+            Assert.AreEqual("F", twin.Unit);
         }
 
-        class DigitalTwin : ReadOnlyJson
+        // DigitalTwin Library Type
+        public class DigitalTwinsClient
+        {
+            public DigitalTwin GetTwin() => new DigitalTwin(s_demo_payload);
+
+            public T GetTwin<T>() => (T)Activator.CreateInstance(typeof(T), new object[] { s_demo_payload });
+        }
+
+        // DigitalTwin Library Type
+        public class DigitalTwin : ReadOnlyJson
         {
             public DigitalTwin(string json) : base(json) { }
+            public DigitalTwin(ReadOnlyJson json) : base(json) { }
 
-            public string service_defined_1 => (string)this["service_defined_1"];
-            public byte service_defined_2 => (byte)this["service_defined_2"];
-            public bool service_defined_3 => (bool)this["service_defined_3"];
+            public T As<T>() where T: DigitalTwin => (T)Activator.CreateInstance(typeof(T), new object[] { (DigitalTwin)this });
+
+            public string Id => (string)this["Id"];
+            public byte CreatedAt => (byte)this["CreatedAt"];
+            public bool Decomissioned => (bool)this["Decomissioned"];
         }
-        class UserDefinedTwin : DigitalTwin
-        {
-            public UserDefinedTwin(string json) : base(json) { }
 
-            public string user_defined_1 => (string)this["user_defined_1"];
+        // User Defined Type
+        class TemperatureSensor : DigitalTwin
+        {
+            public TemperatureSensor(string json) : base(json) { }
+
+            public TemperatureSensor(DigitalTwin twin) : base(twin) { }
+
+            public string Unit => (string)this["Unit"];
+            public byte Temperature => (byte)this["Temperature"];
         }
     }
 }
