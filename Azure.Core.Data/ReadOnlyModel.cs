@@ -5,11 +5,8 @@ using System.Linq.Expressions;
 using System.ComponentModel;
 using System.Collections;
 using System;
-using System.IO;
 using System.Reflection;
 using System.Buffers;
-using System.Threading.Tasks;
-using System.Threading;
 using System.Diagnostics;
 
 namespace Azure.Data
@@ -44,7 +41,7 @@ namespace Azure.Data
             if (TryGetPropertyCore(propertyName, out object value))
             {
                 if (IsPrimitive(value.GetType())) return value;
-                if (value is Model) return value;
+                if (value is ReadOnlyModel) return value;
                 else throw new Exception("TryGetPropertyCore returned invalid object");
             }
             throw new InvalidOperationException("Property not found");
@@ -55,7 +52,6 @@ namespace Azure.Data
             if (TryGetAtCore(index, out object item))
             {
                 if (IsPrimitive(item.GetType())) return item;
-                if (item is Model) return item;
                 if (item is ReadOnlyModel) return item;
                 else throw new Exception("TryGetAt returned invalid object");
             }

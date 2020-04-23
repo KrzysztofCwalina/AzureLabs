@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Azure.Data.Tests
 {
@@ -8,7 +6,7 @@ namespace Azure.Data.Tests
     {
         public string First { get; set; }
         public string Last { get; set; }
-
+        public int Age { get; set; }
         public Address Address { get; set; }
     }
 
