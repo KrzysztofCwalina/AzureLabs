@@ -16,7 +16,7 @@ namespace Azure.Data.Tests
             "\"user_defined_2\" : \"hello\"" +
             "}";
 
-            var twin = new ReadOnlyJson(json);
+            var twin = new UserDefinedTwin(json);
 
             Assert.AreEqual(123, twin["service_defined_2"]);
             Assert.AreEqual("hi", twin["user_defined_1"]);
@@ -32,20 +32,24 @@ namespace Azure.Data.Tests
             Assert.AreEqual(123, dynamic.service_defined_2);
             Assert.AreEqual("hi", dynamic.user_defined_1);
 
-            UserDefinedTwin udt = (UserDefinedTwin)dynamic;
-            Assert.AreEqual(123, udt.service_defined_2);
-            Assert.AreEqual("hi", udt.user_defined_1);
+
+            Assert.AreEqual(123, twin.service_defined_2);
+            Assert.AreEqual("hi", twin.user_defined_1);
         }
 
-        class DigitalTwin
+        class DigitalTwin : ReadOnlyJson
         {
-            public string service_defined_1 { get; set; }
-            public int service_defined_2 { get; set; }
-            public bool service_defined_3 { get; set; }
+            public DigitalTwin(string json) : base(json) { }
+
+            public string service_defined_1 => (string)this["service_defined_1"];
+            public byte service_defined_2 => (byte)this["service_defined_2"];
+            public bool service_defined_3 => (bool)this["service_defined_3"];
         }
         class UserDefinedTwin : DigitalTwin
         {
-            public string user_defined_1 { get; set; }
+            public UserDefinedTwin(string json) : base(json) { }
+
+            public string user_defined_1 => (string)this["user_defined_1"];
         }
     }
 }
