@@ -4,27 +4,48 @@ using System.IO;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Threading;
+using System.Diagnostics;
 
 namespace Azure.Data
 {
     public class ReadOnlyJson : ReadOnlyModel
     {
         private JsonElement _json;
+        private object _originalData;
+        private bool _deserialized;
 
         public ReadOnlyJson(string jsonObject)
         {
-            var document = JsonDocument.Parse(jsonObject);
-            _json = document.RootElement;
-            if (_json.ValueKind != JsonValueKind.Object && _json.ValueKind != JsonValueKind.Array) throw new InvalidOperationException("JSON is not an object or array");
+            _originalData = jsonObject;
         }
 
         public ReadOnlyJson(Stream jsonObject)
         {
-            var document = JsonDocument.Parse(jsonObject);
-            _json = document.RootElement;
-            if (_json.ValueKind != JsonValueKind.Object) throw new InvalidOperationException("JSON is not an object");
+            _originalData = jsonObject;
+
         }
 
+        private void Deserialize()
+        {
+            Debug.Assert(_deserialized == false);
+            var jsonString = _originalData as string;
+            if (jsonString != null)
+            {
+                var document = JsonDocument.Parse(jsonString);
+                _json = document.RootElement;
+            }
+            else
+            {
+                var jsonStream = _originalData as Stream;
+                var document = JsonDocument.Parse(jsonStream);
+                _json = document.RootElement;
+            }
+            if (_json.ValueKind != JsonValueKind.Object && _json.ValueKind != JsonValueKind.Array) throw new InvalidOperationException("JSON is not an object or array");
+        }
+        private JsonElement GetJsonElement() { 
+            if (!_deserialized) Deserialize();
+            return _json;
+        }
         public static async Task<ReadOnlyJson> CreateAsync(Stream json, CancellationToken cancellationToken)
         {
             var document = await JsonDocument.ParseAsync(json, default, cancellationToken).ConfigureAwait(false);
@@ -35,6 +56,7 @@ namespace Azure.Data
         {
             if (jsonObject.ValueKind != JsonValueKind.Object && jsonObject.ValueKind != JsonValueKind.Array) throw new InvalidOperationException("JSON is not an object or array");
             _json = jsonObject;
+            _deserialized = true;
         }
 
         protected override Model CreateCore(ReadOnlySpan<(string propertyName, object propertyValue)> properties)
@@ -42,9 +64,10 @@ namespace Azure.Data
 
         public override IEnumerable<string> PropertyNames {
             get {
-                if (_json.ValueKind == JsonValueKind.Object)
+                JsonElement element = GetJsonElement();
+                if (element.ValueKind == JsonValueKind.Object)
                 {
-                    foreach (var property in _json.EnumerateObject())
+                    foreach (var property in element.EnumerateObject())
                     {
                         yield return property.Name;
                     }
@@ -54,7 +77,8 @@ namespace Azure.Data
 
         protected override bool TryGetPropertyCore(string propertyName, out object propertyValue)
         {
-            if (!_json.TryGetProperty(propertyName, out JsonElement element))
+            JsonElement json = GetJsonElement();
+            if (!json.TryGetProperty(propertyName, out JsonElement element))
             {
                 propertyValue = default;
                 return false;
@@ -163,25 +187,28 @@ namespace Azure.Data
         protected override bool TryGetAtCore(int index, out object item)
         {
             item = default;
-            if (_json.ValueKind != JsonValueKind.Array) return false;
-            JsonElement itemElement = _json[index];
+            JsonElement json = GetJsonElement();
+            if (json.ValueKind != JsonValueKind.Array) return false;
+            JsonElement itemElement = json[index];
             return TryGetValue(itemElement, out item);
         }
 
         public object ToType(Type type)
         {
-            var result = JsonSerializer.Deserialize(_json.GetRawText(), type);
+            JsonElement json = GetJsonElement();
+            var result = JsonSerializer.Deserialize(json.GetRawText(), type);
             return result;
         }
 
         protected override bool TryConvertToCore(Type type, out object converted)
         {
-            if (_json.ValueKind == JsonValueKind.Array && !IsPrimitiveArray(type))
+            JsonElement json = GetJsonElement();
+            if (json.ValueKind == JsonValueKind.Array && !IsPrimitiveArray(type))
             {
-                var items = _json.GetArrayLength();
+                var items = json.GetArrayLength();
                 var array = new ReadOnlyJson[items];
                 int index = 0;
-                foreach(var item in _json.EnumerateArray())
+                foreach(var item in json.EnumerateArray())
                 {
                     array[index++] = new ReadOnlyJson(item); // TODO: this will throw for primitives.
                 }
@@ -190,13 +217,19 @@ namespace Azure.Data
             }
             try
             {
-                converted = JsonSerializer.Deserialize(_json.GetRawText(), type);
+                converted = JsonSerializer.Deserialize(json.GetRawText(), type);
                 return true;
             }
             catch { }
 
             converted = default;
             return false;
+        }
+
+        public override string ToString()
+        {
+            if (_originalData is string) return (string)_originalData;
+            else return base.ToString();
         }
     }
 }

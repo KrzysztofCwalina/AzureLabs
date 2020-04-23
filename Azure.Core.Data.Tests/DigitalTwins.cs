@@ -18,6 +18,9 @@ namespace Azure.Data.Tests
 
             var twin = new UserDefinedTwin(json);
 
+            string original = twin.ToString();
+            Assert.IsTrue(ReferenceEquals(json, original));
+
             Assert.AreEqual(123, twin["service_defined_2"]);
             Assert.AreEqual("hi", twin["user_defined_1"]);
 
@@ -31,7 +34,6 @@ namespace Azure.Data.Tests
             dynamic dynamic = new ReadOnlyJson(json);
             Assert.AreEqual(123, dynamic.service_defined_2);
             Assert.AreEqual("hi", dynamic.user_defined_1);
-
 
             Assert.AreEqual(123, twin.service_defined_2);
             Assert.AreEqual("hi", twin.user_defined_1);
