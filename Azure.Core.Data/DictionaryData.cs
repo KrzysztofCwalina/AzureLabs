@@ -41,6 +41,11 @@ namespace Azure.Data
 
         protected override bool TryGetPropertyCore(string propertyName, out object propertyValue) => _properties.TryGetValue(propertyName, out propertyValue);
 
+        protected override bool TryGetAtCore(int index, out object item)
+        {
+            throw new NotImplementedException();
+        }
+
         protected override bool TryConvertToCore(Type type, out object converted)
             => TryConvertTo(_properties, type, out converted);
 
@@ -110,6 +115,11 @@ namespace Azure.Data
         }
 
         protected override bool TryGetPropertyCore(string propertyName, out object propertyValue) => _properties.TryGetValue(propertyName, out propertyValue);
+
+        protected override bool TryGetAtCore(int index, out object item)
+        {
+            throw new NotImplementedException();
+        }
 
         protected override bool TryConvertToCore(Type type, out object converted)
             => ReadOnlyDictionaryData.TryConvertTo(_properties, type, out converted);

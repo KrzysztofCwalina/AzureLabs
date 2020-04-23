@@ -15,7 +15,7 @@ namespace Azure.Data
         {
             var document = JsonDocument.Parse(jsonObject);
             _json = document.RootElement;
-            if (_json.ValueKind != JsonValueKind.Object) throw new InvalidOperationException("JSON is not an object");
+            if (_json.ValueKind != JsonValueKind.Object && _json.ValueKind != JsonValueKind.Array) throw new InvalidOperationException("JSON is not an object or array");
         }
 
         public ReadOnlyJsonData(Stream jsonObject)
@@ -154,6 +154,14 @@ namespace Azure.Data
                 default:
                     throw new NotImplementedException();
             }
+            return true;
+        }
+
+        protected override bool TryGetAtCore(int index, out object item)
+        {
+            item = default;
+            if (_json.ValueKind != JsonValueKind.Array) return false;
+            item = _json[index].GetInt64();
             return true;
         }
 
