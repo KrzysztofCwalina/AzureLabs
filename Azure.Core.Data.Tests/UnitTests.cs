@@ -61,12 +61,44 @@ namespace Azure.Data.Tests
         }
 
         [Test]
-        public void ArrayData()
+        public void PrimitiveArray()
         {
             var data = "[5,10,20]";
             dynamic array = DynamicData.CreateFromJson(data);
             Assert.AreEqual(5, array[0]);
             Assert.AreEqual(20, array[2]);
+
+            var intArray = (int[])array;
+            Assert.AreEqual(5, intArray[0]);
+            Assert.AreEqual(20, intArray[2]);
+        }
+
+        [Test]
+        public void ComplexArray()
+        {
+            var data = "[{\"Foo\":10 },{\"Foo\":20}]";
+            dynamic array = DynamicData.CreateFromJson(data);
+            dynamic first = array[0];
+
+            Assert.AreEqual(10, first.Foo);
+            Assert.AreEqual(20, array[1].Foo);
+
+            var dynamicArray = (dynamic[])array;
+
+            dynamic firstNext = dynamicArray[0];
+            Assert.AreEqual(10, firstNext.Foo);
+            Assert.AreEqual(20, dynamicArray[1].Foo);
+        }
+
+        [Test]
+        public void ComplexArray2()
+        {
+            var data = "[{\"Foo\":10 },{\"Foo\":20}]";
+            dynamic array = DynamicData.CreateFromJson(data);
+            var dynamicArray = (dynamic[])array;
+
+            dynamic firstNext = dynamicArray[0];
+            Assert.AreEqual(10, firstNext.Foo);
         }
 
         [Test]

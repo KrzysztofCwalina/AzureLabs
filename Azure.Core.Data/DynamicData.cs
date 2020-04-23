@@ -20,6 +20,7 @@ namespace Azure.Data
 
         internal DynamicData() { } // internal, as we don't want to make it publicly extensible yet.
 
+        // TODO: I really don't like that users cannot just new up an instance. But for this, we would need to put a filed in this abstraction.
         public static DynamicData Create(params (string propertyName, object propertyValue)[] properties)
             => new ReadWriteDictionaryData(properties);
 
@@ -214,7 +215,7 @@ namespace Azure.Data
             if (type.IsPrimitive) return true;
             return false;
         }
-        private bool IsPrimitiveArray(Type type)
+        protected bool IsPrimitiveArray(Type type)
         {
             if (type.IsArray && IsPrimitive(type.GetElementType())) return true;
             return false;

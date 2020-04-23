@@ -33,7 +33,7 @@ namespace Azure.Data
 
         public ReadOnlyJsonData(JsonElement jsonObject)
         {
-            if (_json.ValueKind != JsonValueKind.Object) throw new InvalidOperationException("JSON is not an object");
+            if (jsonObject.ValueKind != JsonValueKind.Object && jsonObject.ValueKind != JsonValueKind.Array) throw new InvalidOperationException("JSON is not an object or array");
             _json = jsonObject;
         }
 
@@ -64,22 +64,27 @@ namespace Azure.Data
                 return false;
             }
 
+            return TryGetValue(element, out propertyValue);
+        }
+
+        private bool TryGetValue(JsonElement element, out object value)
+        {
             switch (element.ValueKind)
             {
                 case JsonValueKind.String:
-                    propertyValue = element.GetString();
+                    value = element.GetString();
                     break;
                 case JsonValueKind.False:
-                    propertyValue = false;
+                    value = false;
                     break;
                 case JsonValueKind.True:
-                    propertyValue = true;
+                    value = true;
                     break;
                 case JsonValueKind.Null:
-                    propertyValue = null;
+                    value = null;
                     break;
                 case JsonValueKind.Object:
-                    propertyValue = new ReadOnlyJsonData(element);
+                    value = new ReadOnlyJsonData(element);
                     break;
                 case JsonValueKind.Number:
                     // TODO: is this what we want? i.e. we return the smallest integer if the value fits, the floats, the decimal.
@@ -89,20 +94,21 @@ namespace Azure.Data
                         {
                             if (ulongValue <= ushort.MaxValue)
                             {
-                                if (ulongValue <= byte.MaxValue) {
-                                    propertyValue = (byte)ulongValue;
+                                if (ulongValue <= byte.MaxValue)
+                                {
+                                    value = (byte)ulongValue;
                                     break;
                                 }
 
-                                propertyValue = (ushort)ulongValue;
+                                value = (ushort)ulongValue;
                                 break;
                             }
 
-                            propertyValue = (uint)ulongValue;
+                            value = (uint)ulongValue;
                             break;
                         }
 
-                        propertyValue = ulongValue;
+                        value = ulongValue;
                         break;
                     }
 
@@ -115,36 +121,37 @@ namespace Azure.Data
                             {
                                 if (longValue >= sbyte.MinValue)
                                 {
-                                    propertyValue = (sbyte)longValue;
+                                    value = (sbyte)longValue;
                                     break;
                                 }
 
-                                propertyValue = (short)longValue;
+                                value = (short)longValue;
                                 break;
                             }
 
-                            propertyValue = (int)longValue;
+                            value = (int)longValue;
                             break;
                         }
 
-                        propertyValue = longValue;
+                        value = longValue;
                         break;
                     }
 
                     if (element.TryGetSingle(out var singleValue))
                     {
-                        propertyValue = singleValue;
+                        value = singleValue;
                         break;
                     }
 
                     if (element.TryGetDouble(out var doubleValue))
                     {
-                        propertyValue = doubleValue;
+                        value = doubleValue;
                         break;
                     }
 
-                    if (element.TryGetDecimal(out var decimalValue)) {
-                        propertyValue = decimalValue;
+                    if (element.TryGetDecimal(out var decimalValue))
+                    {
+                        value = decimalValue;
                         break;
                     }
                     throw new NotImplementedException(); // this should never happen
@@ -161,8 +168,8 @@ namespace Azure.Data
         {
             item = default;
             if (_json.ValueKind != JsonValueKind.Array) return false;
-            item = _json[index].GetInt64();
-            return true;
+            JsonElement itemElement = _json[index];
+            return TryGetValue(itemElement, out item);
         }
 
         public object ToType(Type type)
@@ -173,6 +180,18 @@ namespace Azure.Data
 
         protected override bool TryConvertToCore(Type type, out object converted)
         {
+            if (_json.ValueKind == JsonValueKind.Array && !IsPrimitiveArray(type))
+            {
+                var items = _json.GetArrayLength();
+                var array = new ReadOnlyJsonData[items];
+                int index = 0;
+                foreach(var item in _json.EnumerateArray())
+                {
+                    array[index++] = new ReadOnlyJsonData(item); // TODO: this will throw for primitives.
+                }
+                converted = array;
+                return true;
+            }
             try
             {
                 converted = JsonSerializer.Deserialize(_json.GetRawText(), type);
