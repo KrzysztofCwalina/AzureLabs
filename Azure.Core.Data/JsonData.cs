@@ -154,12 +154,12 @@ namespace Azure.Data
                         value = decimalValue;
                         break;
                     }
-                    throw new NotImplementedException(); // this should never happen
+                    throw new NotImplementedException("this should never happen");
                 case JsonValueKind.Array:
-                    // what do we do here? Deserialize all the values?
-                    throw new NotImplementedException(); // TODO: this needs to be finished
+                    value = new ReadOnlyJsonData(element);
+                    break;
                 default:
-                    throw new NotImplementedException();
+                    throw new NotImplementedException("this should never happen");
             }
             return true;
         }

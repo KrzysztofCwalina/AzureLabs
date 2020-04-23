@@ -45,6 +45,16 @@ namespace Azure.Data.Tests
             a.Items = new Foo[] { new Foo() };
         }
 
+        [Test]
+        public void ArrayOfArrays()
+        {
+            var data = "[[{\"Foo\":10 },{\"Foo\":20}]]";
+            dynamic array = DynamicData.CreateFromJson(data);
+            var arrayOfFoo = array[0];
+            var foo = arrayOfFoo[0];
+            Assert.AreEqual(10, foo.Foo);
+        }
+
         class Foo
         {
             public Foo FooProperty { get; set; }
