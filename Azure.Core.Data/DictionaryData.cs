@@ -8,7 +8,7 @@ using System.Reflection;
 
 namespace Azure.Data
 {
-    internal class ReadOnlyDictionaryData : DynamicData, IReadOnlyDictionary<string, object>
+    internal class ReadOnlyDictionaryData : Model, IReadOnlyDictionary<string, object>
     {
         private IReadOnlyDictionary<string, object> _properties;
 
@@ -34,7 +34,7 @@ namespace Azure.Data
 
         public override bool IsReadOnly => true;
 
-        protected override DynamicData CreateCore(ReadOnlySpan<(string propertyName, object propertyValue)> properties)
+        protected override Model CreateCore(ReadOnlySpan<(string propertyName, object propertyValue)> properties)
             => new ReadOnlyDictionaryData(properties);
 
         protected override void SetPropertyCore(string propertyName, object propertyValue) => ThrowReadOnlyException();
@@ -82,7 +82,7 @@ namespace Azure.Data
         #endregion
     }
 
-    internal class ReadWriteDictionaryData : DynamicData, IDictionary<string, object>, IReadOnlyDictionary<string, object>
+    internal class ReadWriteDictionaryData : Model, IDictionary<string, object>, IReadOnlyDictionary<string, object>
     {
         private IDictionary<string, object> _properties;
 
@@ -106,7 +106,7 @@ namespace Azure.Data
 
         public override bool IsReadOnly => false;
 
-        protected override DynamicData CreateCore(ReadOnlySpan<(string propertyName, object propertyValue)> properties)
+        protected override Model CreateCore(ReadOnlySpan<(string propertyName, object propertyValue)> properties)
             => new ReadWriteDictionaryData(properties);
 
         protected override void SetPropertyCore(string propertyName, object propertyValue)

@@ -8,7 +8,7 @@ namespace Azure.Data.Tests
         [Test]
         public void Basics()
         {
-            dynamic contact = DynamicData.Create();
+            dynamic contact = Model.Create();
             contact.First = "John";
             contact.Last = "Smith";
             contact.Age = 25;
@@ -21,23 +21,9 @@ namespace Azure.Data.Tests
         }
 
         [Test]
-        public void FromJson()
-        {
-            var data = "{ \"First\" : \"John\", \"Last\" : \"Smith\" }";
-            dynamic contact = DynamicData.CreateFromJson(data);
-            Assert.AreEqual("John", contact.First);
-            Assert.AreEqual("Smith", contact.Last);
-
-            var deserialized = (Contact)contact;
-
-            Assert.AreEqual(deserialized.First, contact.First);
-            Assert.AreEqual(deserialized.Last, contact.Last);
-        }
-
-        [Test]
         public void Deserialize()
         {
-            dynamic address = DynamicData.Create();
+            dynamic address = Model.Create();
             address.Zip = 98052;
             address.City = "Redmond";
 
@@ -53,31 +39,19 @@ namespace Azure.Data.Tests
             address.City = "Redmond";
             address.Zip = 98052;
 
-            dynamic contact = DynamicData.Create();
+            dynamic contact = Model.Create();
             contact.Address = address;
 
             Assert.AreEqual("Redmond", contact.Address.City);
             Assert.AreEqual(98052, contact.Address.Zip);
         }
 
-        [Test]
-        public void PrimitiveArray()
-        {
-            var data = "[5,10,20]";
-            dynamic array = DynamicData.CreateFromJson(data);
-            Assert.AreEqual(5, array[0]);
-            Assert.AreEqual(20, array[2]);
-
-            var intArray = (int[])array;
-            Assert.AreEqual(5, intArray[0]);
-            Assert.AreEqual(20, intArray[2]);
-        }
 
         [Test]
         public void ComplexArray()
         {
             var data = "[{\"Foo\":10 },{\"Foo\":20}]";
-            dynamic array = DynamicData.CreateFromJson(data);
+            dynamic array = Model.CreateFromJson(data);
             dynamic first = array[0];
 
             Assert.AreEqual(10, first.Foo);
@@ -93,7 +67,7 @@ namespace Azure.Data.Tests
         [Test]
         public void AnonymousValue()
         {
-            dynamic contact = DynamicData.Create();
+            dynamic contact = Model.Create();
             contact.Address = new { Zip = 98052, City = "Redmond" };
 
             Assert.AreEqual("Redmond", contact.Address.City);
@@ -111,7 +85,7 @@ namespace Azure.Data.Tests
         [Test]
         public void ReadOnly()
         {
-            DynamicData data = DynamicData.CreateReadOnly(
+            Model data = Model.CreateReadOnly(
                 ("First", "John"),
                 ("Last", "Smith"),
                 ("Age", 25)
@@ -136,7 +110,7 @@ namespace Azure.Data.Tests
         [Test]
         public void Indexer()
         {
-            DynamicData data = DynamicData.Create();
+            Model data = Model.Create();
             data["First"] = "John";
             data["Last"] = "Smith";
             data["Age"] = 25;
@@ -153,18 +127,5 @@ namespace Azure.Data.Tests
             Assert.AreEqual(25, data["Age"]);
         }
 
-        public struct Contact
-        {
-            public string First { get; set; }
-            public string Last { get; set; }
-
-            public Address Address { get; set; }
-        }
-
-        public struct Address
-        {
-            public int Zip { get; set; }
-            public string City { get; set; }
-        }
     }
 }

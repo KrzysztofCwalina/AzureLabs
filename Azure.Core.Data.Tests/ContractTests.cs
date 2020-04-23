@@ -8,8 +8,8 @@ namespace Azure.Data.Tests
         [Test]
         public void DynamicDataCycle()
         {
-            dynamic a = DynamicData.Create();
-            dynamic b = DynamicData.Create();
+            dynamic a = Model.Create();
+            dynamic b = Model.Create();
             a.B = b;
             b.A = a;
         }
@@ -23,7 +23,7 @@ namespace Azure.Data.Tests
             a.FooProperty = b;
             b.FooProperty = a;
 
-            dynamic d = DynamicData.Create();
+            dynamic d = Model.Create();
 
             // TODO: should this throw?
             Assert.Throws<InvalidOperationException>(() => {
@@ -34,25 +34,15 @@ namespace Azure.Data.Tests
         [Test]
         public void PrimitiveArray()
         {
-            dynamic a = DynamicData.Create();
+            dynamic a = Model.Create();
             a.Items = new int[] { 1, 2, 3 };
         }
 
         [Test]
         public void ComplexArray()
         {
-            dynamic a = DynamicData.Create();
+            dynamic a = Model.Create();
             a.Items = new Foo[] { new Foo() };
-        }
-
-        [Test]
-        public void ArrayOfArrays()
-        {
-            var data = "[[{\"Foo\":10 },{\"Foo\":20}]]";
-            dynamic array = DynamicData.CreateFromJson(data);
-            var arrayOfFoo = array[0];
-            var foo = arrayOfFoo[0];
-            Assert.AreEqual(10, foo.Foo);
         }
 
         class Foo

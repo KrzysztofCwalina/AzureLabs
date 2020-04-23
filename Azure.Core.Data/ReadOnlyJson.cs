@@ -7,39 +7,37 @@ using System.Threading;
 
 namespace Azure.Data
 {
-    internal class ReadOnlyJsonData : DynamicData
+    public class ReadOnlyJson : ReadOnlyModel
     {
         private JsonElement _json;
 
-        public ReadOnlyJsonData(string jsonObject)
+        public ReadOnlyJson(string jsonObject)
         {
             var document = JsonDocument.Parse(jsonObject);
             _json = document.RootElement;
             if (_json.ValueKind != JsonValueKind.Object && _json.ValueKind != JsonValueKind.Array) throw new InvalidOperationException("JSON is not an object or array");
         }
 
-        public ReadOnlyJsonData(Stream jsonObject)
+        public ReadOnlyJson(Stream jsonObject)
         {
             var document = JsonDocument.Parse(jsonObject);
             _json = document.RootElement;
             if (_json.ValueKind != JsonValueKind.Object) throw new InvalidOperationException("JSON is not an object");
         }
 
-        public static async Task<DynamicData> CreateAsync(Stream json, CancellationToken cancellationToken)
+        public static async Task<ReadOnlyJson> CreateAsync(Stream json, CancellationToken cancellationToken)
         {
             var document = await JsonDocument.ParseAsync(json, default, cancellationToken).ConfigureAwait(false);
-            return new ReadOnlyJsonData(document.RootElement);
+            return new ReadOnlyJson(document.RootElement);
         }
 
-        public ReadOnlyJsonData(JsonElement jsonObject)
+        public ReadOnlyJson(JsonElement jsonObject)
         {
             if (jsonObject.ValueKind != JsonValueKind.Object && jsonObject.ValueKind != JsonValueKind.Array) throw new InvalidOperationException("JSON is not an object or array");
             _json = jsonObject;
         }
 
-        public override bool IsReadOnly => true;
-
-        protected override DynamicData CreateCore(ReadOnlySpan<(string propertyName, object propertyValue)> properties)
+        protected override Model CreateCore(ReadOnlySpan<(string propertyName, object propertyValue)> properties)
             => new ReadOnlyDictionaryData(properties); // TODO: is this OK that it creates a defferent type?
 
         public override IEnumerable<string> PropertyNames {
@@ -53,8 +51,6 @@ namespace Azure.Data
                 }
             }
         }
-
-        protected override void SetPropertyCore(string propertyName, object propertyValue) => ThrowReadOnlyException();
 
         protected override bool TryGetPropertyCore(string propertyName, out object propertyValue)
         {
@@ -84,7 +80,7 @@ namespace Azure.Data
                     value = null;
                     break;
                 case JsonValueKind.Object:
-                    value = new ReadOnlyJsonData(element);
+                    value = new ReadOnlyJson(element);
                     break;
                 case JsonValueKind.Number:
                     // TODO: is this what we want? i.e. we return the smallest integer if the value fits, the floats, the decimal.
@@ -156,7 +152,7 @@ namespace Azure.Data
                     }
                     throw new NotImplementedException("this should never happen");
                 case JsonValueKind.Array:
-                    value = new ReadOnlyJsonData(element);
+                    value = new ReadOnlyJson(element);
                     break;
                 default:
                     throw new NotImplementedException("this should never happen");
@@ -183,11 +179,11 @@ namespace Azure.Data
             if (_json.ValueKind == JsonValueKind.Array && !IsPrimitiveArray(type))
             {
                 var items = _json.GetArrayLength();
-                var array = new ReadOnlyJsonData[items];
+                var array = new ReadOnlyJson[items];
                 int index = 0;
                 foreach(var item in _json.EnumerateArray())
                 {
-                    array[index++] = new ReadOnlyJsonData(item); // TODO: this will throw for primitives.
+                    array[index++] = new ReadOnlyJson(item); // TODO: this will throw for primitives.
                 }
                 converted = array;
                 return true;
