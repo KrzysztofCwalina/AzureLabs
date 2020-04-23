@@ -8,6 +8,8 @@ namespace Azure.Data.Tests
         public string Last { get; set; }
         public int Age { get; set; }
         public Address Address { get; set; }
+
+        public string[] Phones { get; set; }
     }
 
     public struct Address

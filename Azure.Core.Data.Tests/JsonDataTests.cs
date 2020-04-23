@@ -4,7 +4,7 @@ namespace Azure.Data.Tests
 {
     public class JsonModelTest
     {
-        static string s_contact1 = "{ \"First\" : \"John\", \"Last\" : \"Smith\", \"Age\" : 25, \"Address\" : { \"Zip\" : 98052, \"City\" : \"Redmond\" } }";
+        static string s_contact1 = "{ \"First\" : \"John\", \"Last\" : \"Smith\", \"Age\" : 25, \"Address\" : { \"Zip\" : 98052, \"City\" : \"Redmond\" } , \"Phones\" : [ \"425-999-9999\",  \"425-999-9998\" ] }";
         static string s_contact2 = "{ \"First\" : \"Marry\", \"Last\" : \"Smith\", \"Age\" : 30, \"Address\" : { \"Zip\" : 98052, \"City\" : \"Redmond\" } }";
 
         [Test]
@@ -15,24 +15,57 @@ namespace Azure.Data.Tests
             Assert.AreEqual("John", contact.First);
             Assert.AreEqual("Smith", contact.Last);
             Assert.AreEqual(25, contact.Age);
+            Assert.AreEqual(98052, contact.Address.Zip);
+            Assert.AreEqual("Redmond", contact.Address.City);
 
             dynamic address = contact.Address;
 
             Assert.AreEqual(98052, address.Zip);
             Assert.AreEqual("Redmond", address.City);
 
-            Assert.AreEqual(98052, contact.Address.Zip);
-            Assert.AreEqual("Redmond", contact.Address.City);
+            dynamic phones = contact.Phones;
+            Assert.AreEqual("425-999-9999", phones[0]);
+            Assert.AreEqual("425-999-9998", phones[1]);
         }
 
         [Test]
         public void Deserialize()
         {
-            dynamic contact = new ReadOnlyJson(s_contact1);
-            var deserialized = (Contact)contact;
+            dynamic json = new ReadOnlyJson(s_contact1);
+            var contact = (Contact)json;
 
-            Assert.AreEqual(deserialized.First, contact.First);
-            Assert.AreEqual(deserialized.Last, contact.Last);
+            Assert.AreEqual("John", contact.First);
+            Assert.AreEqual("Smith", contact.Last);
+            Assert.AreEqual(25, contact.Age);
+            Assert.AreEqual(98052, json.Address.Zip);
+            Assert.AreEqual("Redmond", json.Address.City);
+
+            var address = (Address)json.Address;
+
+            Assert.AreEqual(98052, address.Zip);
+            Assert.AreEqual("Redmond", address.City);
+
+            var phones = (string[])json.Phones;
+            Assert.AreEqual("425-999-9999", phones[0]);
+            Assert.AreEqual("425-999-9998", phones[1]);
+        }
+
+        [Test]
+        public void Dictionary()
+        {
+            ReadOnlyModel contact = new ReadOnlyJson(s_contact1);
+
+            Assert.AreEqual("John", contact["First"]);
+            Assert.AreEqual("Smith", contact["Last"]);
+            Assert.AreEqual(25, contact["Age"]);
+
+            var address = (ReadOnlyModel)contact["Address"];
+            Assert.AreEqual(98052, address["Zip"]);
+            Assert.AreEqual("Redmond", address["City"]);
+
+            //var phones = (string[])contact["Phones"];
+            //Assert.AreEqual("425-999-9999", phones[0]);
+            //Assert.AreEqual("425-999-9998", phones[1]);
         }
 
         [Test]
@@ -54,9 +87,9 @@ namespace Azure.Data.Tests
             var data = $"[[{s_contact1},{s_contact2}]]";
 
             dynamic json = new ReadOnlyJson(data);
-
             dynamic contacts = json[0];
             dynamic contact = contacts[0];
+
             Assert.AreEqual(25, contact.Age);
         }
     }
