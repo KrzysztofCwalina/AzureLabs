@@ -58,7 +58,7 @@ namespace Azure.Data.Tests
         [Test]
         public void DynamicTypeSystemDemo()
         {
-            var twin = new TemperatureSensor(s_demo_payload);
+            var twin = new ReadOnlyJson(s_demo_payload);
 
             string original = twin.ToString();
             Assert.IsTrue(ReferenceEquals(s_demo_payload, original));
@@ -74,13 +74,10 @@ namespace Azure.Data.Tests
             }
             Assert.AreEqual(5, numberOfProperties);
 
-            dynamic dynamic = new ReadOnlyJson(s_demo_payload);
-            Assert.AreEqual(72, dynamic.Temperature);
-            Assert.AreEqual("F", dynamic.Unit);
-            Assert.AreEqual("ID0001", dynamic.Id);
-
-            Assert.AreEqual(123, twin.CreatedAt);
-            Assert.AreEqual("F", twin.Unit);
+            dynamic dynamicTwin = twin;
+            Assert.AreEqual(72, dynamicTwin.Temperature);
+            Assert.AreEqual("F", dynamicTwin.Unit);
+            Assert.AreEqual("ID0001", dynamicTwin.Id);
         }
 
         // DigitalTwin Library Type
