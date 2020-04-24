@@ -16,7 +16,7 @@ namespace Azure.Data
 
         public static ModelSchema ParseJson(string schemaJson)
         {
-            var schema = new Dictionary<string, ModelSchema.PropertySchema>();
+            var schema = new Dictionary<string, ModelSchema.PropertySchema>(StringComparer.Ordinal);
 
             var document = JsonDocument.Parse(schemaJson);
             var root = document.RootElement;

@@ -20,6 +20,7 @@ namespace Azure.Data
         public ReadOnlyDictionaryModel(ReadOnlySpan<(string propertyName, object propertyValue)> properties)
         {
             Debug.Assert(properties.Length > 0); // use ReadOnlyDictionaryData.Empty instead.
+            // TODO: we know all the property names, so it would be nice to use perfect hash
             var dictionary = new Dictionary<string, object>(properties.Length);
             foreach (var property in properties)
             {

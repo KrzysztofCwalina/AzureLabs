@@ -8,12 +8,12 @@ namespace Azure.Data
     {
         private IDictionary<string, object> _properties;
 
-        public ReadWriteDictionaryData() => _properties = new Dictionary<string, object>();
+        public ReadWriteDictionaryData() => _properties = new Dictionary<string, object>(StringComparer.Ordinal);
 
         public ReadWriteDictionaryData(ModelSchema schema)
             : base(schema)
         {
-            _properties = new Dictionary<string, object>();
+            _properties = new Dictionary<string, object>(StringComparer.Ordinal);
         }
 
         public ReadWriteDictionaryData(IDictionary<string, object> properties) => _properties = properties;
@@ -24,7 +24,7 @@ namespace Azure.Data
 
         public ReadWriteDictionaryData(ReadOnlySpan<(string propertyName, object propertyValue)> properties)
         {
-            var dictionary = new Dictionary<string, object>(properties.Length);
+            var dictionary = new Dictionary<string, object>(properties.Length, StringComparer.Ordinal);
             foreach (var property in properties)
             {
                 dictionary.Add(property.propertyName, property.propertyValue);
