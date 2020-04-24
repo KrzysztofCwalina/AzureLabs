@@ -67,8 +67,8 @@ namespace Azure.Data
             _deserialized = true;
         }
 
-        protected override Model CreateCore(ReadOnlySpan<(string propertyName, object propertyValue)> properties)
-            => new ReadOnlyDictionaryData(properties); // TODO: is this OK that it creates a defferent type?
+        protected override ReadOnlyModel CreateCore(ReadOnlySpan<(string propertyName, object propertyValue)> properties)
+            => new ReadOnlyDictionaryModel(properties); // TODO: is this OK that it creates a defferent type?
 
         public override IEnumerable<string> PropertyNames {
             get {

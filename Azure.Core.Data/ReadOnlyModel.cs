@@ -13,7 +13,7 @@ namespace Azure.Data
 {
     public abstract class ReadOnlyModel : IDynamicMetaObjectProvider, IEnumerable<string>
     {
-        static Model s_empty = new ReadOnlyDictionaryData();
+        static ReadOnlyModel s_empty = new ReadOnlyDictionaryModel();
 
         public object this[string propertyName] {
             get => GetProperty(propertyName);
@@ -34,7 +34,7 @@ namespace Azure.Data
 
         protected abstract bool TryConvertToCore(Type type, out object converted);
 
-        protected abstract Model CreateCore(ReadOnlySpan<(string propertyName, object propertyValue)> properties);
+        protected abstract ReadOnlyModel CreateCore(ReadOnlySpan<(string propertyName, object propertyValue)> properties);
 
         private object GetProperty(string propertyName)
         {
@@ -116,7 +116,7 @@ namespace Azure.Data
             }
         }
 
-        internal Model FromComplex(object obj, ref int allowedDebth)
+        internal ReadOnlyModel FromComplex(object obj, ref int allowedDebth)
         {
             if (--allowedDebth < 0) throw new InvalidOperationException("Object grath too deep");
 
@@ -124,7 +124,7 @@ namespace Azure.Data
             Debug.Assert(!IsPrimitive(type));
             Debug.Assert(!IsPrimitiveArray(type));
 
-            var result = obj as Model;
+            var result = obj as ReadOnlyModel;
             if (result != null) return result;
 
             var objectProperties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);

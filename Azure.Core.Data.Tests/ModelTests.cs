@@ -3,7 +3,7 @@ using System;
 
 namespace Azure.Data.Tests
 {
-    public class DynamicDataTests
+    public class ModelTests
     {
         [Test]
         public void Basics()
@@ -46,7 +46,6 @@ namespace Azure.Data.Tests
             Assert.AreEqual(98052, contact.Address.Zip);
         }
 
-
         [Test]
         public void ComplexArray()
         {
@@ -85,16 +84,11 @@ namespace Azure.Data.Tests
         [Test]
         public void ReadOnly()
         {
-            Model data = Model.CreateReadOnly(
+            ReadOnlyModel data = Model.CreateReadOnly(
                 ("First", "John"),
                 ("Last", "Smith"),
                 ("Age", 25)
             );
-
-            Assert.Throws<InvalidOperationException>(() =>
-            {
-                data["First"] = "Mark";
-            });
 
             dynamic contact = data;
 
@@ -110,7 +104,7 @@ namespace Azure.Data.Tests
         [Test]
         public void Indexer()
         {
-            Model data = Model.Create();
+            ReadWriteModel data = Model.Create();
             data["First"] = "John";
             data["Last"] = "Smith";
             data["Age"] = 25;
@@ -126,6 +120,5 @@ namespace Azure.Data.Tests
             Assert.AreEqual(25, contact.Age);
             Assert.AreEqual(25, data["Age"]);
         }
-
     }
 }
