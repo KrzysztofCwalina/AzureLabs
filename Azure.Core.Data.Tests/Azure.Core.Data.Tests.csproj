@@ -16,4 +16,10 @@
     <ProjectReference Include="..\Azure.Core.Data\Azure.Core.Data.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="ContactSchema.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
