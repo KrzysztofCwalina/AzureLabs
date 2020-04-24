@@ -39,13 +39,19 @@ public class DynamicJsonBench
 
     static ReadOnlyModel perfect;
 
+    static Data data;
+    static dynamic ddata = data;
+
     [GlobalSetup]
     public void Setup()
     {
         var properties = new Dictionary<string, object>(StringComparer.Ordinal);
+        data = new Data();
+        ddata = data;
         foreach (var property in roj.PropertyNames)
         {
             properties.Add(property, roj[property]);
+            data[property] = roj[property];
         }
         sdoc = new SearchDocument(properties);
         dsdoc = sdoc;
@@ -57,12 +63,14 @@ public class DynamicJsonBench
         rom = Model.CreateFromReadOnlyDictionary(properties);
         drom = rom;
 
-        perfect = Model.CreateFromReadOnlyDictionary(new PerfectDictionary(properties));
+        perfect = Model.CreateFromReadOnlyDictionary(new PerfectDictionary(properties));        
     }
-
 
     [Benchmark]
     public string IndexerPerfectHash() => (string)perfect["Id"];
+
+    [Benchmark]
+    public string IndexerData() => (string)data["Id"];
 
     [Benchmark]
     public string IndexerReadOnlyModel() => (string)rom["Id"];
@@ -76,17 +84,20 @@ public class DynamicJsonBench
     [Benchmark(Baseline=true)]
     public string IndexerDictionary() => (string)dict["Id"];
 
-    //[Benchmark]
-    //public string DynamicReadOnlyJson() => droj.Id;
+    [Benchmark]
+    public string DynamicReadOnlyJson() => droj.Id;
 
-    //[Benchmark]
-    //public string DynamicReadOnlyModel() => (string)drom.Id;
+    [Benchmark]
+    public string DynamicData() => ddata.Id;
 
-    //[Benchmark]
-    //public string DynamicSearchDocument() => (string)dsdoc.Id;
+    [Benchmark]
+    public string DynamicReadOnlyModel() => (string)drom.Id;
 
-    //[Benchmark]
-    //public string DynamicObject() => (string)dobj.Id;
+    [Benchmark]
+    public string DynamicSearchDocument() => (string)dsdoc.Id;
+
+    [Benchmark]
+    public string DynamicObject() => (string)dobj.Id;
 }
 
 public class Program
@@ -104,6 +115,7 @@ class Payload
     public string Unit { get; set; }
 }
 
+// This is manualy created perfect hash dictionary
 class PerfectDictionary : IReadOnlyDictionary<string, object>
 {
     // CreatedAt 67 => 0

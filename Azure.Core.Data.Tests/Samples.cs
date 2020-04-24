@@ -3,12 +3,12 @@ using System;
 
 namespace Azure.Data.Tests
 {
-    public class ModelTests
+    public class Samples
     {
         [Test]
-        public void Basics()
+        public void S01_HelloWorld()
         {
-            dynamic contact = Model.Create();
+            dynamic contact = new Data();
             contact.First = "John";
             contact.Last = "Smith";
             contact.Age = 25;
@@ -21,9 +21,9 @@ namespace Azure.Data.Tests
         }
 
         [Test]
-        public void Deserialize()
+        public void S02_Deserialize()
         {
-            dynamic address = Model.Create();
+            dynamic address = new Data();
             address.Zip = 98052;
             address.City = "Redmond";
 
@@ -33,13 +33,13 @@ namespace Azure.Data.Tests
         }
 
         [Test]
-        public void Serialize()
+        public void S03_Serialize()
         {
             var address = new Address();
             address.City = "Redmond";
             address.Zip = 98052;
 
-            dynamic contact = Model.Create();
+            dynamic contact = new Data();
             contact.Address = address;
 
             Assert.AreEqual("Redmond", contact.Address.City);
@@ -47,26 +47,9 @@ namespace Azure.Data.Tests
         }
 
         [Test]
-        public void ComplexArray()
+        public void S04_AnonymousValue()
         {
-            var data = "[{\"Foo\":10 },{\"Foo\":20}]";
-            dynamic array = Model.CreateFromJson(data);
-            dynamic first = array[0];
-
-            Assert.AreEqual(10, first.Foo);
-            Assert.AreEqual(20, array[1].Foo);
-
-            var dynamicArray = (dynamic[])array;
-
-            dynamic firstNext = dynamicArray[0];
-            Assert.AreEqual(10, firstNext.Foo);
-            Assert.AreEqual(20, dynamicArray[1].Foo);
-        }
-
-        [Test]
-        public void AnonymousValue()
-        {
-            dynamic contact = Model.Create();
+            dynamic contact = new Data();
             contact.Address = new { Zip = 98052, City = "Redmond" };
 
             Assert.AreEqual("Redmond", contact.Address.City);
@@ -82,7 +65,26 @@ namespace Azure.Data.Tests
         }
 
         [Test]
-        public void ReadOnly()
+        public void S05_ComplexArray()
+        {
+            var data = "[{\"Foo\":10 },{\"Foo\":20}]";
+            dynamic array = Model.CreateFromJson(data);
+            dynamic first = array[0];
+
+            Assert.AreEqual(10, first.Foo);
+            Assert.AreEqual(20, array[1].Foo);
+
+            var dynamicArray = (dynamic[])array;
+
+            dynamic firstNext = dynamicArray[0];
+            Assert.AreEqual(10, firstNext.Foo);
+            Assert.AreEqual(20, dynamicArray[1].Foo);
+        }
+
+
+
+        [Test]
+        public void S06_ReadOnly()
         {
             ReadOnlyModel data = Model.CreateReadOnly(
                 ("First", "John"),
@@ -102,7 +104,7 @@ namespace Azure.Data.Tests
         }
 
         [Test]
-        public void Indexer()
+        public void S07_Indexer()
         {
             ReadWriteModel data = Model.Create();
             data["First"] = "John";
