@@ -8,7 +8,10 @@ namespace Azure.Data.Tests
         [Test]
         public void Basics()
         {
-            dynamic contact = Model.CreateWithJsonSchema("ContactSchema.json");
+            var schema = JsonSchemaParser.ParseFile("ContactSchema.json");
+
+            dynamic contact = new Data(schema);
+
             contact.First = "John";
             contact.Last = "Smith";
             contact.Age = 25;

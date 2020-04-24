@@ -81,8 +81,6 @@ namespace Azure.Data.Tests
             Assert.AreEqual(20, dynamicArray[1].Foo);
         }
 
-
-
         [Test]
         public void S06_ReadOnly()
         {
@@ -106,7 +104,7 @@ namespace Azure.Data.Tests
         [Test]
         public void S07_Indexer()
         {
-            ReadWriteModel data = Model.Create();
+            var data = new Data();
             data["First"] = "John";
             data["Last"] = "Smith";
             data["Age"] = 25;

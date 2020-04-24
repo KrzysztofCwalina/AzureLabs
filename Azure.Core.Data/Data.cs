@@ -23,16 +23,12 @@ namespace Azure.Data
 
         internal protected abstract Data CreateCore(ReadOnlySpan<(string propertyName, object propertyValue)> properties);
 
-        internal protected abstract ModelSchema Schema { get; }
-
         internal protected abstract IEnumerable<string> PropertyNames { get; }
     }
 
     public class DictionaryStore : DataStore
     {
         Dictionary<string, object> _properties = new Dictionary<string, object>(StringComparer.Ordinal);
-
-        protected internal override ModelSchema Schema => null;
 
         protected internal override IEnumerable<string> PropertyNames => _properties.Keys;
 
@@ -84,10 +80,14 @@ namespace Azure.Data
         static ReadOnlyModel s_empty = new ReadOnlyDictionaryModel();
 
         DataStore _store;
+        ModelSchema _schema;
 
         public Data() => _store = new DictionaryStore();
+
         public Data(DataStore provider) => _store = provider;
 
+        public Data(ModelSchema schema) : this() => _schema = schema;
+                
         public object this[string propertyName] {
             get => GetProperty(propertyName);
             set => SetProperty(propertyName, value);
@@ -131,6 +131,22 @@ namespace Azure.Data
 
         private protected virtual object SetProperty(string propertyName, object propertyValue)
         {
+            if (_schema != default)
+            {
+                if (!_schema.TryGetSchema(propertyName, out var schema))
+                {
+                    throw new InvalidOperationException($"Property {propertyName} does not exist");
+                }
+                if (schema.IsReadOnly)
+                {
+                    throw new InvalidOperationException($"Property {propertyName} is read-only");
+                }
+                if (!schema.Type.IsAssignableFrom(propertyValue.GetType()))
+                {
+                    throw new InvalidOperationException($"Property {propertyName} is of type {schema.Type}");
+                }
+            }
+
             var valueType = propertyValue.GetType();
 
             if (!IsPrimitive(valueType) && !IsPrimitiveArray(valueType))

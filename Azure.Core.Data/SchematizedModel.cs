@@ -12,7 +12,8 @@ namespace Azure.Data
             _schema = default;
         }
         // internal, as we don't want to make it publicly extensible yet.
-        internal SchematizedModel(ModelSchema schema) {
+        internal SchematizedModel(ModelSchema schema)
+        {
             _schema = schema;
         }
 

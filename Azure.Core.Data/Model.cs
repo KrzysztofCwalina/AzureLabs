@@ -7,19 +7,25 @@ namespace Azure.Data
 {
     public static class Model
     {
-        public static ReadWriteModel Create(params (string propertyName, object propertyValue)[] properties)
-            => new ReadWriteDictionaryData(properties);
+        public static Data Create(params (string propertyName, object propertyValue)[] properties)
+        {
+            var data = new Data();
+            foreach (var property in properties)
+            {
+                data[property.propertyName] = property.propertyValue;
+            }
+            return data;
+        }
 
         public static ReadOnlyModel CreateReadOnly(params (string propertyName, object propertyValue)[] properties)
             => new ReadOnlyDictionaryModel(properties);
 
-        public static ReadWriteModel Create(ModelSchema schema)
-            => new ReadWriteDictionaryData(schema);
+        public static Data Create(ModelSchema schema)
+            => new Data(schema);
 
-        public static ReadWriteModel CreateWithJsonSchema(string schemaFile)
+        public static Data CreateWithJsonSchema(string schemaFile)
             => Create(JsonSchemaParser.ParseFile(schemaFile));
 
-        public static ReadWriteModel CreateFromDictionary(IDictionary<string, object> properties) => new ReadWriteDictionaryData(properties);
         public static ReadOnlyModel CreateFromReadOnlyDictionary(IReadOnlyDictionary<string, object> properties) => new ReadOnlyDictionaryModel(properties);
         public static ReadOnlyModel CreateFromJson(string jsonObject) => new ReadOnlyJson(jsonObject);
         public static ReadOnlyModel CreateFromJson(Stream jsonObject) => new ReadOnlyJson(jsonObject);
