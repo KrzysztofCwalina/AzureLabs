@@ -60,7 +60,9 @@ namespace Azure.Data
             Dictionary<string, PropertySchema> _properties;
 
             public JsonSchema(Dictionary<string, PropertySchema> properties)
-                => _properties = properties;
+            {
+                _properties = properties;
+            }
 
             public override IEnumerable<string> PropertyNames => _properties.Keys;
 

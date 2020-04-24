@@ -6,7 +6,6 @@ namespace Azure.Data
     public abstract class ModelSchema
     {
         public abstract bool TryGetSchema(string propertyName, out PropertySchema schema);
-
         public abstract IEnumerable<string> PropertyNames { get; }
         public readonly struct PropertySchema
         {

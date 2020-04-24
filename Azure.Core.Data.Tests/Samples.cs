@@ -64,27 +64,27 @@ namespace Azure.Data.Tests
             Assert.AreEqual(98052, addressValue.Zip);
         }
 
-        [Test]
-        public void S05_ComplexArray()
-        {
-            var data = "[{\"Foo\":10 },{\"Foo\":20}]";
-            dynamic array = Model.CreateFromJson(data);
-            dynamic first = array[0];
+        //[Test]
+        //public void S05_ComplexArray()
+        //{
+        //    var data = "[{\"Foo\":10 },{\"Foo\":20}]";
+        //    dynamic array = Model.CreateFromJson(data);
+        //    dynamic first = array[0];
 
-            Assert.AreEqual(10, first.Foo);
-            Assert.AreEqual(20, array[1].Foo);
+        //    Assert.AreEqual(10, first.Foo);
+        //    Assert.AreEqual(20, array[1].Foo);
 
-            var dynamicArray = (dynamic[])array;
+        //    var dynamicArray = (dynamic[])array;
 
-            dynamic firstNext = dynamicArray[0];
-            Assert.AreEqual(10, firstNext.Foo);
-            Assert.AreEqual(20, dynamicArray[1].Foo);
-        }
+        //    dynamic firstNext = dynamicArray[0];
+        //    Assert.AreEqual(10, firstNext.Foo);
+        //    Assert.AreEqual(20, dynamicArray[1].Foo);
+        //}
 
         [Test]
         public void S06_ReadOnly()
         {
-            ReadOnlyModel data = Model.CreateReadOnly(
+            Data data = Model.CreateReadOnly(
                 ("First", "John"),
                 ("Last", "Smith"),
                 ("Age", 25)

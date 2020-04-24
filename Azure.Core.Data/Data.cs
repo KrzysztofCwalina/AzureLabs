@@ -24,27 +24,38 @@ namespace Azure.Data
         internal protected abstract Data CreateCore(ReadOnlySpan<(string propertyName, object propertyValue)> properties);
 
         internal protected abstract IEnumerable<string> PropertyNames { get; }
+
+        internal protected abstract bool IsReadOnly { get; }
     }
 
-    public class DictionaryStore : DataStore
+    class DictionaryStore : DataStore
     {
         Dictionary<string, object> _properties = new Dictionary<string, object>(StringComparer.Ordinal);
+        bool _readonly = false;
 
         protected internal override IEnumerable<string> PropertyNames => _properties.Keys;
+
+        protected internal override bool IsReadOnly => false;
+
+        internal void Freeze() => _readonly = true;
 
         protected internal override Data CreateCore(ReadOnlySpan<(string propertyName, object propertyValue)> properties)
         {
             var result = new DictionaryStore();
-            for (int i=0; i<properties.Length; i++)
+            for (int i = 0; i < properties.Length; i++)
             {
                 var property = properties[i];
                 result.SetPropertyCore(property.propertyName, property.propertyValue);
             }
+            if (_readonly) result.Freeze();
             return new Data(result);
         }
 
         protected internal override void SetPropertyCore(string propertyName, object propertyValue)
-            => _properties[propertyName] = propertyValue;
+        {
+            if (_readonly) throw new InvalidOperationException("The data is read-only");
+            _properties[propertyName] = propertyValue;
+        }
 
         protected internal override bool TryConvertToCore(Type type, out object converted)
         {
@@ -77,8 +88,6 @@ namespace Azure.Data
 
     public class Data : IDynamicMetaObjectProvider, IEnumerable<string>
     {
-        static ReadOnlyModel s_empty = new ReadOnlyDictionaryModel();
-
         DataStore _store;
         ModelSchema _schema;
 
@@ -87,7 +96,28 @@ namespace Azure.Data
         public Data(DataStore provider) => _store = provider;
 
         public Data(ModelSchema schema) : this() => _schema = schema;
-                
+
+        public Data(ReadOnlySpan<(string propertyName, object propertyValue)> properties, bool isReadOnly) {
+            var store = new DictionaryStore();
+            for (int i = 0; i < properties.Length; i++){
+                var property = properties[i];
+                store.SetPropertyCore(property.propertyName, property.propertyValue);
+            }
+            if (isReadOnly) store.Freeze(); 
+            _store = store;
+        }
+
+        public Data(IReadOnlyDictionary<string, object> properties)
+        {
+            var store = new DictionaryStore();
+            foreach (var property in properties)
+            {
+                store.SetPropertyCore(property.Key, property.Value);
+            }
+            store.Freeze();
+            _store = store;
+        }
+
         public object this[string propertyName] {
             get => GetProperty(propertyName);
             set => SetProperty(propertyName, value);
@@ -131,6 +161,10 @@ namespace Azure.Data
 
         private protected virtual object SetProperty(string propertyName, object propertyValue)
         {
+            if (_store.IsReadOnly)
+            {
+                throw new InvalidOperationException($"The data is read-only");
+            }
             if (_schema != default)
             {
                 if (!_schema.TryGetSchema(propertyName, out var schema))

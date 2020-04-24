@@ -34,11 +34,7 @@ public class DynamicJsonBench
     static Payload obj;
     static dynamic dobj;
         
-    static ReadOnlyModel rom;
-    static dynamic drom;
-
-    static ReadOnlyModel perfect;
-
+    // TODO: this shoould also test read-only data and with perfect hash
     static Data data;
     static dynamic ddata = data;
 
@@ -58,22 +54,11 @@ public class DynamicJsonBench
         dict = properties;
 
         obj = (Payload)droj;
-        dobj = obj;
-
-        rom = Model.CreateFromReadOnlyDictionary(properties);
-        drom = rom;
-
-        perfect = Model.CreateFromReadOnlyDictionary(new PerfectDictionary(properties));        
+        dobj = obj;      
     }
 
     [Benchmark]
-    public string IndexerPerfectHash() => (string)perfect["Id"];
-
-    [Benchmark]
     public string IndexerData() => (string)data["Id"];
-
-    [Benchmark]
-    public string IndexerReadOnlyModel() => (string)rom["Id"];
 
     [Benchmark]
     public string IndexerReadOnlyJson() => (string)roj["Id"];
@@ -89,9 +74,6 @@ public class DynamicJsonBench
 
     [Benchmark]
     public string DynamicData() => ddata.Id;
-
-    [Benchmark]
-    public string DynamicReadOnlyModel() => (string)drom.Id;
 
     [Benchmark]
     public string DynamicSearchDocument() => (string)dsdoc.Id;

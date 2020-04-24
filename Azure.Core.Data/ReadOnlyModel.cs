@@ -13,8 +13,6 @@ namespace Azure.Data
 {
     public abstract class ReadOnlyModel : IDynamicMetaObjectProvider, IEnumerable<string>
     {
-        static ReadOnlyModel s_empty = new ReadOnlyDictionaryModel();
-
         public object this[string propertyName] {
             get => GetProperty(propertyName);
         }
