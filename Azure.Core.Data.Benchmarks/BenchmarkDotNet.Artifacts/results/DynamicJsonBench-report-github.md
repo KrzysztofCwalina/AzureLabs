@@ -9,11 +9,12 @@ Intel Core i7-6700K CPU 4.00GHz (Skylake), 1 CPU, 8 logical and 4 physical cores
 Job=.NET Core 3.0  Runtime=.NET Core 3.0  
 
 ```
-|                Method |      Mean |     Error |    StdDev |
-|---------------------- |----------:|----------:|----------:|
-|   IndexerReadOnlyJson | 91.141 ns | 1.3245 ns | 1.1742 ns |
-| IndexerSearchDocument | 19.077 ns | 0.1891 ns | 0.1579 ns |
-|     IndexerDictionary | 18.433 ns | 0.1229 ns | 0.1149 ns |
-|   DynamicReadOnlyJson | 95.144 ns | 0.5716 ns | 0.4773 ns |
-| DynamicSearchDocument | 46.815 ns | 0.1257 ns | 0.1176 ns |
-|         DynamicObject |  5.989 ns | 0.0518 ns | 0.0459 ns |
+|                Method |       Mean |     Error |    StdDev | Ratio | RatioSD |
+|---------------------- |-----------:|----------:|----------:|------:|--------:|
+|   IndexerReadOnlyJson | 91.4866 ns | 1.8002 ns | 1.7681 ns | 4.824 |    0.11 |
+| IndexerSearchDocument | 19.0245 ns | 0.2879 ns | 0.2404 ns | 1.008 |    0.03 |
+|     IndexerDictionary | 18.9890 ns | 0.4215 ns | 0.4329 ns | 1.000 |    0.00 |
+|   DynamicReadOnlyJson | 94.6148 ns | 0.6723 ns | 0.6288 ns | 4.998 |    0.11 |
+| DynamicSearchDocument | 47.3536 ns | 0.4689 ns | 0.4157 ns | 2.507 |    0.05 |
+|         DynamicObject |  6.4372 ns | 0.1927 ns | 0.2825 ns | 0.344 |    0.02 |
+|          StaticObject |  0.0000 ns | 0.0000 ns | 0.0000 ns | 0.000 |    0.00 |

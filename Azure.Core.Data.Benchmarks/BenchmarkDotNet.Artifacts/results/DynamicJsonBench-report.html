@@ -2,7 +2,7 @@
 <html lang='en'>
 <head>
 <meta charset='utf-8' />
-<title>DynamicJsonBench-20200424-110244</title>
+<title>DynamicJsonBench-20200424-111314</title>
 
 <style type="text/css">
 	table { border-collapse: collapse; display: block; width: 100%; overflow: auto; }
@@ -23,14 +23,15 @@ Intel Core i7-6700K CPU 4.00GHz (Skylake), 1 CPU, 8 logical and 4 physical cores
 </code></pre>
 
 <table>
-<thead><tr><th>         Method</th><th>Mean</th><th>Error</th><th>StdDev</th>
+<thead><tr><th>         Method</th><th>Mean</th><th>Error</th><th>StdDev</th><th>Ratio</th><th>RatioSD</th>
 </tr>
-</thead><tbody><tr><td>IndexerReadOnlyJson</td><td>91.141 ns</td><td>1.3245 ns</td><td>1.1742 ns</td>
-</tr><tr><td>IndexerSearchDocument</td><td>19.077 ns</td><td>0.1891 ns</td><td>0.1579 ns</td>
-</tr><tr><td>IndexerDictionary</td><td>18.433 ns</td><td>0.1229 ns</td><td>0.1149 ns</td>
-</tr><tr><td>DynamicReadOnlyJson</td><td>95.144 ns</td><td>0.5716 ns</td><td>0.4773 ns</td>
-</tr><tr><td>DynamicSearchDocument</td><td>46.815 ns</td><td>0.1257 ns</td><td>0.1176 ns</td>
-</tr><tr><td>DynamicObject</td><td>5.989 ns</td><td>0.0518 ns</td><td>0.0459 ns</td>
+</thead><tbody><tr><td>IndexerReadOnlyJson</td><td>91.4866 ns</td><td>1.8002 ns</td><td>1.7681 ns</td><td>4.824</td><td>0.11</td>
+</tr><tr><td>IndexerSearchDocument</td><td>19.0245 ns</td><td>0.2879 ns</td><td>0.2404 ns</td><td>1.008</td><td>0.03</td>
+</tr><tr><td>IndexerDictionary</td><td>18.9890 ns</td><td>0.4215 ns</td><td>0.4329 ns</td><td>1.000</td><td>0.00</td>
+</tr><tr><td>DynamicReadOnlyJson</td><td>94.6148 ns</td><td>0.6723 ns</td><td>0.6288 ns</td><td>4.998</td><td>0.11</td>
+</tr><tr><td>DynamicSearchDocument</td><td>47.3536 ns</td><td>0.4689 ns</td><td>0.4157 ns</td><td>2.507</td><td>0.05</td>
+</tr><tr><td>DynamicObject</td><td>6.4372 ns</td><td>0.1927 ns</td><td>0.2825 ns</td><td>0.344</td><td>0.02</td>
+</tr><tr><td>StaticObject</td><td>0.0000 ns</td><td>0.0000 ns</td><td>0.0000 ns</td><td>0.000</td><td>0.00</td>
 </tr></tbody></table>
 </body>
 </html>
