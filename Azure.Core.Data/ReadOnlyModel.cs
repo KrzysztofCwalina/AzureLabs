@@ -114,6 +114,9 @@ namespace Azure.Data
                 expression = Expression.Convert(expression, binder.Type);
                 return new DynamicMetaObject(expression, restrictions);
             }
+
+            public override DynamicMetaObject BindSetMember(SetMemberBinder binder, DynamicMetaObject value)
+                => throw new InvalidOperationException("this model ius read-only");
         }
 
         internal ReadOnlyModel FromComplex(object obj, ref int allowedDebth)
