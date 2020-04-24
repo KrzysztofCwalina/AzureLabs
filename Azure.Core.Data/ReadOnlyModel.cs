@@ -40,9 +40,8 @@ namespace Azure.Data
         {
             if (TryGetPropertyCore(propertyName, out object value))
             {
-                if (IsPrimitive(value.GetType())) return value;
-                if (value is ReadOnlyModel) return value;
-                else throw new Exception("TryGetPropertyCore returned invalid object");
+                Debug.Assert(IsPrimitive(value.GetType()) || value is ReadOnlyModel);
+                return value;
             }
             throw new InvalidOperationException("Property not found");
         }
