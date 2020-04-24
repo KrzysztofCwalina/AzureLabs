@@ -11,7 +11,8 @@ Job=.NET Core 3.0  Runtime=.NET Core 3.0
 ```
 |                Method |     Mean |    Error |   StdDev |
 |---------------------- |---------:|---------:|---------:|
-|   IndexerReadOnlyJson | 90.24 ns | 0.480 ns | 0.449 ns |
-| IndexerSearchDocument | 18.23 ns | 0.150 ns | 0.140 ns |
-|   DynamicReadOnlyJson | 96.59 ns | 0.288 ns | 0.269 ns |
-| DynamicSearchDocument | 49.45 ns | 0.372 ns | 0.348 ns |
+|   IndexerReadOnlyJson | 90.89 ns | 1.312 ns | 1.404 ns |
+| IndexerSearchDocument | 18.13 ns | 0.403 ns | 0.357 ns |
+|     IndexerDictionary | 18.57 ns | 0.289 ns | 0.241 ns |
+|   DynamicReadOnlyJson | 97.32 ns | 1.110 ns | 0.984 ns |
+| DynamicSearchDocument | 48.45 ns | 0.110 ns | 0.086 ns |

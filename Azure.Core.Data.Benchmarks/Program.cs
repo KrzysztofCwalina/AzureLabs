@@ -24,6 +24,7 @@ public class DynamicJsonBench
     static dynamic droj = roj;
     static SearchDocument sdoc;
     static dynamic dsdoc;
+    static IReadOnlyDictionary<string, object> dict;
 
     [GlobalSetup]
     public void Setup()
@@ -35,6 +36,7 @@ public class DynamicJsonBench
         }
         sdoc = new SearchDocument(properties);
         dsdoc = sdoc;
+        dict = properties;
     }
 
     [Benchmark]
@@ -42,6 +44,9 @@ public class DynamicJsonBench
 
     [Benchmark]
     public string IndexerSearchDocument() => (string)sdoc["Id"];
+
+    [Benchmark]
+    public string IndexerDictionary() => (string)dict["Id"];
 
     [Benchmark]
     public string DynamicReadOnlyJson() => droj.Id;
