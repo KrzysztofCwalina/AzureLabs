@@ -36,23 +36,23 @@ namespace Azure.Data.Tests
             Assert.AreEqual(123, dynamic.CreatedAt); // the service defined properties are also avaliable through dynamic calls.
 
             // the client also has strongly typed APIs
-            TemperatureSensor udt = client.GetTwin<TemperatureSensor>();
+            TemperatureSensor sensor = client.GetTwin<TemperatureSensor>();
 
-            Assert.AreEqual("F", udt.Unit);
-            Assert.AreEqual(72, udt.Temperature);
-            Assert.AreEqual("ID0001", udt.Id);
-            Assert.AreEqual(123, udt.CreatedAt);
-            Assert.AreEqual(true, udt.Decomissioned);
+            Assert.AreEqual("F", sensor.Unit);
+            Assert.AreEqual(72, sensor.Temperature);
+            Assert.AreEqual("ID0001", sensor.Id);
+            Assert.AreEqual(123, sensor.CreatedAt);
+            Assert.AreEqual(true, sensor.Decomissioned);
 
             // Interestingly, the base twin type can be converted to user defined type
-            udt = twin.As<TemperatureSensor>();
+            sensor = twin.As<TemperatureSensor>();
 
-            Assert.AreEqual("F", udt.Unit);
-            Assert.AreEqual(72, udt.Temperature);
+            Assert.AreEqual("F", sensor.Unit);
+            Assert.AreEqual(72, sensor.Temperature);
 
-            Assert.AreEqual("ID0001", udt.Id);
-            Assert.AreEqual(123, udt.CreatedAt);
-            Assert.AreEqual(true, udt.Decomissioned);
+            Assert.AreEqual("ID0001", sensor.Id);
+            Assert.AreEqual(123, sensor.CreatedAt);
+            Assert.AreEqual(true, sensor.Decomissioned);
         }
 
         [Test]
