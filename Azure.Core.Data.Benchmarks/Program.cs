@@ -30,13 +30,19 @@ public class DynamicJsonBench
         public string Unit { get; set; }
     }
 
+    static IReadOnlyDictionary<string, object> dict;
+
     static ReadOnlyJson roj = new ReadOnlyJson(s_demo_payload);
     static dynamic droj = roj;
+
     static SearchDocument sdoc;
     static dynamic dsdoc;
-    static IReadOnlyDictionary<string, object> dict;
-    static dynamic dobj;
+
     static Payload obj;
+    static dynamic dobj;
+        
+    static ReadOnlyModel rom;
+    static dynamic drom;
 
     [GlobalSetup]
     public void Setup()
@@ -52,7 +58,13 @@ public class DynamicJsonBench
 
         obj = (Payload)droj;
         dobj = obj;
+
+        rom = Model.CreateFromDictionary(properties);
+        drom = rom;
     }
+
+    [Benchmark]
+    public string IndexerReadOnlyModel() => (string)rom["Id"];
 
     [Benchmark]
     public string IndexerReadOnlyJson() => (string)roj["Id"];
@@ -65,6 +77,9 @@ public class DynamicJsonBench
 
     [Benchmark]
     public string DynamicReadOnlyJson() => droj.Id;
+
+    [Benchmark]
+    public string DynamicReadOnlyModel() => (string)drom.Id;
 
     [Benchmark]
     public string DynamicSearchDocument() => (string)dsdoc.Id;
