@@ -58,6 +58,7 @@ namespace Azure.Data.Tests
         [Test]
         public void DynamicTypeSystemDemo()
         {
+            // ReadOnlyJson is a type we woudl add to Azure.Core
             var twin = new ReadOnlyJson(s_demo_payload);
 
             string original = twin.ToString();
