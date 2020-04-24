@@ -9,9 +9,9 @@ Intel Core i7-6700K CPU 4.00GHz (Skylake), 1 CPU, 8 logical and 4 physical cores
 Job=.NET Core 3.0  Runtime=.NET Core 3.0  
 
 ```
-|                Method |        Mean |    Error |   StdDev |
-|---------------------- |------------:|---------:|---------:|
-|   ReadOnlyJsonIndexer | 1,045.76 ns | 5.378 ns | 5.030 ns |
-|   ReadOnlyJsonDynamic | 1,081.82 ns | 5.573 ns | 4.941 ns |
-| SearchDocumentIndexer |    17.84 ns | 0.113 ns | 0.106 ns |
-| SearchDocumentDynamic |    48.42 ns | 0.261 ns | 0.244 ns |
+|                Method |      Mean |    Error |   StdDev |
+|---------------------- |----------:|---------:|---------:|
+|   IndexerReadOnlyJson |  93.82 ns | 1.020 ns | 0.904 ns |
+| IndexerSearchDocument |  17.98 ns | 0.083 ns | 0.078 ns |
+|   DynamicReadOnlyJson | 104.45 ns | 0.388 ns | 0.344 ns |
+| DynamicSearchDocument |  48.40 ns | 0.280 ns | 0.262 ns |

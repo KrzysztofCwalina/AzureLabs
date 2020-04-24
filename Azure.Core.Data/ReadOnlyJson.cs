@@ -48,6 +48,7 @@ namespace Azure.Data
                 _json = document.RootElement;
             }
             if (_json.ValueKind != JsonValueKind.Object && _json.ValueKind != JsonValueKind.Array) throw new InvalidOperationException("JSON is not an object or array");
+            _deserialized = true;
         }
         private JsonElement GetJsonElement() { 
             if (!_deserialized) Deserialize();

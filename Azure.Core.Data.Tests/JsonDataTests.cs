@@ -9,8 +9,11 @@ namespace Azure.Data.Tests
 
         [Test]
         public void ReadJson()
-        {      
-            dynamic contact = new ReadOnlyJson(s_contact1);
+        {
+            ReadOnlyJson json = new ReadOnlyJson(s_contact1);
+            var first = (string)json["First"];
+
+            dynamic contact = json;
 
             Assert.AreEqual("John", contact.First);
             Assert.AreEqual("Smith", contact.Last);

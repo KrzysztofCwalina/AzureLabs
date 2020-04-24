@@ -38,16 +38,16 @@ public class DynamicJsonBench
     }
 
     [Benchmark]
-    public string ReadOnlyJsonIndexer() => (string)roj["Id"];
+    public string IndexerReadOnlyJson() => (string)roj["Id"];
 
     [Benchmark]
-    public string ReadOnlyJsonDynamic() => droj.Id;
+    public string IndexerSearchDocument() => (string)sdoc["Id"];
 
     [Benchmark]
-    public string SearchDocumentIndexer() => (string)sdoc["Id"];
+    public string DynamicReadOnlyJson() => droj.Id;
 
     [Benchmark]
-    public string SearchDocumentDynamic() => (string)dsdoc.Id;
+    public string DynamicSearchDocument() => (string)dsdoc.Id;
 }
 
 public class Program
