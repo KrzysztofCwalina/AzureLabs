@@ -112,7 +112,7 @@ namespace Azure.Data.Tests
             public T As<T>() where T: DigitalTwin => (T)Activator.CreateInstance(typeof(T), new object[] { (DigitalTwin)this });
 
             public string Id => (string)this["Id"];
-            public byte CreatedAt => (byte)this["CreatedAt"];
+            public int CreatedAt => (int)(double)this["CreatedAt"];
             public bool Decomissioned => (bool)this["Decomissioned"];
         }
 
@@ -124,7 +124,7 @@ namespace Azure.Data.Tests
             public TemperatureSensor(DigitalTwin twin) : base(twin) { }
 
             public string Unit => (string)this["Unit"];
-            public byte Temperature => (byte)this["Temperature"];
+            public double Temperature => (double)this["Temperature"];
         }
     }
 }

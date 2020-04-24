@@ -14,8 +14,6 @@ namespace Azure.Data.Tests
             contact.Age = 25;
 
             Assert.AreEqual("John", contact.First);
-
-            int age = contact.Age;
             Assert.AreEqual(25, contact.Age);
 
             contact.First = "Mark";

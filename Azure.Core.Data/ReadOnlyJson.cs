@@ -95,7 +95,7 @@ namespace Azure.Data
             return TryGetValue(element, out propertyValue);
         }
 
-        private bool TryGetValue(JsonElement element, out object value)
+        private bool TryGetValue(JsonElement element, out object value, Type type = default)
         {
             switch (element.ValueKind)
             {
@@ -115,74 +115,20 @@ namespace Azure.Data
                     value = new ReadOnlyJson(element);
                     break;
                 case JsonValueKind.Number:
-                    // TODO: is this what we want? i.e. we return the smallest integer if the value fits, the floats, the decimal.
-                    if (element.TryGetUInt64(out var ulongValue))
+                    if (type == default)
                     {
-                        if (ulongValue <= uint.MaxValue)
+                        if (element.TryGetDouble(out var doubleValue))
                         {
-                            if (ulongValue <= ushort.MaxValue)
-                            {
-                                if (ulongValue <= byte.MaxValue)
-                                {
-                                    value = (byte)ulongValue;
-                                    break;
-                                }
-
-                                value = (ushort)ulongValue;
-                                break;
-                            }
-
-                            value = (uint)ulongValue;
+                            value = doubleValue;
                             break;
                         }
-
-                        value = ulongValue;
-                        break;
                     }
-
-                    // the value is negative
-                    if (element.TryGetInt64(out var longValue))
+                    if (type == typeof(object))
                     {
-                        if (longValue >= int.MinValue)
-                        {
-                            if (longValue >= short.MinValue)
-                            {
-                                if (longValue >= sbyte.MinValue)
-                                {
-                                    value = (sbyte)longValue;
-                                    break;
-                                }
-
-                                value = (short)longValue;
-                                break;
-                            }
-
-                            value = (int)longValue;
-                            break;
-                        }
-
-                        value = longValue;
+                        value = BestFitNumber(element);
                         break;
                     }
-
-                    if (element.TryGetSingle(out var singleValue))
-                    {
-                        value = singleValue;
-                        break;
-                    }
-
-                    if (element.TryGetDouble(out var doubleValue))
-                    {
-                        value = doubleValue;
-                        break;
-                    }
-
-                    if (element.TryGetDecimal(out var decimalValue))
-                    {
-                        value = decimalValue;
-                        break;
-                    }
-                    throw new NotImplementedException("this should never happen");
+                    throw new NotImplementedException();
                 case JsonValueKind.Array:
                     value = new ReadOnlyJson(element);
                     break;
@@ -192,6 +138,66 @@ namespace Azure.Data
             return true;
         }
 
+        private object BestFitNumber(JsonElement element)
+        {
+            // TODO: is this what we want? i.e. we return the smallest integer if the value fits, the floats, the decimal.
+            if (element.TryGetUInt64(out var ulongValue))
+            {
+                if (ulongValue <= uint.MaxValue)
+                {
+                    if (ulongValue <= ushort.MaxValue)
+                    {
+                        if (ulongValue <= byte.MaxValue)
+                        {
+                            return (byte)ulongValue;
+                        }
+
+                        return (ushort)ulongValue;
+                    }
+
+                    return (uint)ulongValue;
+                }
+
+                return ulongValue;
+            }
+
+            // the value is negative
+            if (element.TryGetInt64(out var longValue))
+            {
+                if (longValue >= int.MinValue)
+                {
+                    if (longValue >= short.MinValue)
+                    {
+                        if (longValue >= sbyte.MinValue)
+                        {
+                            return (sbyte)longValue;
+                        }
+
+                        return (short)longValue;
+                    }
+
+                    return (int)longValue;
+                }
+
+                return longValue;
+            }
+
+            if (element.TryGetSingle(out var singleValue))
+            {
+                return singleValue;
+            }
+
+            if (element.TryGetDouble(out var doubleValue))
+            {
+                return doubleValue;
+            }
+
+            if (element.TryGetDecimal(out var decimalValue))
+            {
+                return decimalValue;
+            }
+            throw new NotImplementedException("this should never happen");
+        }
         protected override bool TryGetAtCore(int index, out object item)
         {
             item = default;
