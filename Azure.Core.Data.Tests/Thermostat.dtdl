@@ -1,0 +1,19 @@
+﻿{
+    "@id": "urn:example:thermostat:1",
+    "@type": "Interface",
+    "displayName": "Thermostat",
+    "contents": [
+        {
+            "@type": "Telemetry",
+            "name": "temp",
+            "schema": "double"
+        },
+        {
+            "@type": "Property",
+            "name": "setPointTemp",
+            "writable": true,
+            "schema": "double"
+        }
+    ],
+    "@context": "http://azureiot.com/v1/contexts/IoTModel.json"
+}

@@ -5,7 +5,7 @@ using System.Text.Json;
 
 namespace Azure.Data
 {
-    public static class JsonSchemaParser
+    public static class DtDlParser
     {
         public static ModelSchema ParseFile(string filename)
         {
@@ -21,26 +21,21 @@ namespace Azure.Data
             var document = JsonDocument.Parse(schemaJson);
             var root = document.RootElement;
 
-            var requiredList = root.GetProperty("required");
-            List<string> requiredProperties = new List<string>();
-            foreach (var required in requiredList.EnumerateArray())
+            var contents = root.GetProperty("contents");
+            foreach (var property in contents.EnumerateArray())
             {
-                requiredProperties.Add(required.GetString());
-            }
-
-            var properties = root.GetProperty("properties");
-            foreach (var property in properties.EnumerateObject())
-            {
-                var name = property.Name;
-                var propertyDescriptor = property.Value;
-                var type = propertyDescriptor.GetProperty("type").GetString();
+                var name = property.GetProperty("name").GetString();
+                var type = property.GetProperty("schema").GetString();
+                bool writable = false;
+                if(property.TryGetProperty("writable", out var writableElement)){
+                    writable = writableElement.ValueKind == JsonValueKind.True;
+                }
 
                 var clrType = ToClrType(type);
-                var isRequired = requiredProperties.Contains(name);
-                schema.Add(name, new ModelSchema.PropertySchema(clrType, name, isReadOnly: false, isRequired));
+                schema.Add(name, new ModelSchema.PropertySchema(clrType, name, !writable, isRequired: false));
             }
 
-            return new JsonSchema(schema);
+            return new DtdlSchema(schema);
         }
 
         private static Type ToClrType(string type)
@@ -51,15 +46,16 @@ namespace Azure.Data
                 case "number": return typeof(int);
                 case "array": return typeof(object[]);
                 case "object": return typeof(object);
+                case "double": return typeof(double);
                 default: throw new NotImplementedException(type);
             }
         }
 
-        class JsonSchema : ModelSchema
+        class DtdlSchema : ModelSchema
         {
             Dictionary<string, PropertySchema> _properties;
 
-            public JsonSchema(Dictionary<string, PropertySchema> properties)
+            public DtdlSchema(Dictionary<string, PropertySchema> properties)
                 => _properties = properties;
 
             public override IEnumerable<string> PropertyNames => _properties.Keys;

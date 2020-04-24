@@ -22,11 +22,15 @@ namespace Azure.Data
             {
                 if (!_schema.TryGetSchema(propertyName, out var schema))
                 {
-                    throw new Exception($"Property {propertyName} does not exist");
+                    throw new InvalidOperationException($"Property {propertyName} does not exist");
+                }
+                if (schema.IsReadOnly)
+                {
+                    throw new InvalidOperationException($"Property {propertyName} is read-only");
                 }
                 if (!schema.Type.IsAssignableFrom(propertyValue.GetType()))
                 {
-                    throw new Exception($"Property {propertyName} is of type {schema.Type}");
+                    throw new InvalidOperationException($"Property {propertyName} is of type {schema.Type}");
                 }
             }
 

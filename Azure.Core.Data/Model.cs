@@ -17,7 +17,7 @@ namespace Azure.Data
             => new ReadWriteDictionaryData(schema);
 
         public static ReadWriteModel CreateWithJsonSchema(string schemaFile)
-            => Create(SchemaParser.ParseFile(schemaFile));
+            => Create(JsonSchemaParser.ParseFile(schemaFile));
 
         public static ReadWriteModel CreateFromDictionary(IDictionary<string, object> properties) => new ReadWriteDictionaryData(properties);
         public static ReadOnlyModel CreateFromDictionary(IReadOnlyDictionary<string, object> properties) => new ReadOnlyDictionaryModel(properties);

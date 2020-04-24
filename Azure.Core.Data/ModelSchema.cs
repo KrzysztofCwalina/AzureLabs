@@ -10,16 +10,18 @@ namespace Azure.Data
         public abstract IEnumerable<string> PropertyNames { get; }
         public readonly struct PropertySchema
         {
-            public PropertySchema(Type type, string name, bool isReadOnly)
+            public PropertySchema(Type type, string name, bool isReadOnly, bool isRequired)
             {
                 Type = type;
                 Name = name;
                 IsReadOnly = isReadOnly;
+                IsRequired = isRequired;
             }
 
             public Type Type { get; }
             public string Name { get;  }
             public bool IsReadOnly { get; }
+            public bool IsRequired { get; }
 
             public override string ToString()
             {

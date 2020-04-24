@@ -1,9 +1,5 @@
 using NUnit.Framework;
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Reflection.Metadata.Ecma335;
-using System.Text.Json;
 
 namespace Azure.Data.Tests
 {
@@ -23,11 +19,11 @@ namespace Azure.Data.Tests
             contact.First = "Mark";
             Assert.AreEqual("Mark", contact.First);
 
-            Assert.Throws<Exception>(() => {
+            Assert.Throws<InvalidOperationException>(() => {
                 contact.First = 20;
             });
 
-            Assert.Throws<Exception>(() => {
+            Assert.Throws<InvalidOperationException>(() => {
                 contact.Middle = "Mark";
             });
         }

@@ -56,6 +56,20 @@ namespace Azure.Data.Tests
         }
 
         [Test]
+        public void Dtdl()
+        {
+            var schema = DtDlParser.ParseFile("Thermostat.dtdl");
+            dynamic model = Model.Create(schema);
+
+            model.setPointTemp = 97.5;
+
+            // temp is read-only
+            Assert.Throws<InvalidOperationException>(() => {
+                model.temp = 99.8;
+            });
+        }
+
+        [Test]
         public void DynamicTypeSystemDemo()
         {
             // ReadOnlyJson is a type we woudl add to Azure.Core
