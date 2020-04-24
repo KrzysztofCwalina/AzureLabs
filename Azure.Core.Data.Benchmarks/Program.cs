@@ -20,11 +20,22 @@ public class DynamicJsonBench
     "\"Unit\" : \"F\"" +            // user defined
     "}";
 
+    class Payload
+    {
+        public string Id { get; set; }
+        public byte CreatedAt { get; set; }
+        public bool Decomissioned { get; set; }
+
+        public byte Temperature { get; set; }
+        public string Unit { get; set; }
+    }
+
     static ReadOnlyJson roj = new ReadOnlyJson(s_demo_payload);
     static dynamic droj = roj;
     static SearchDocument sdoc;
     static dynamic dsdoc;
     static IReadOnlyDictionary<string, object> dict;
+    static dynamic dobj;
 
     [GlobalSetup]
     public void Setup()
@@ -37,6 +48,8 @@ public class DynamicJsonBench
         sdoc = new SearchDocument(properties);
         dsdoc = sdoc;
         dict = properties;
+
+        dobj = (Payload)droj;
     }
 
     [Benchmark]
@@ -53,6 +66,9 @@ public class DynamicJsonBench
 
     [Benchmark]
     public string DynamicSearchDocument() => (string)dsdoc.Id;
+
+    [Benchmark]
+    public string DynamicObject() => (string)dobj.Id;
 }
 
 public class Program
