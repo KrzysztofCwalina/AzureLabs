@@ -9,11 +9,11 @@ namespace Azure.Data.Tests
     {
         static IEnumerable Models {
             get {
-                yield return new Func<IDynamicMetaObjectProvider>(() => { return new Data(); });
+                yield return new Func<IDynamicMetaObjectProvider>(() => { return new DynamicData(); });
             }
         }
 
-        [TestCaseSource(typeof(ContractTests), "Models")]
+        [TestCaseSource(typeof(ReferenceImplementationTests), "Models")]
         public void SetProperties(Func<IDynamicMetaObjectProvider> dynamicObjectFactory)
         {
             dynamic d = dynamicObjectFactory();

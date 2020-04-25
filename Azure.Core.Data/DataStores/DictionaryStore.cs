@@ -1,13 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Text;
-using System.Dynamic;
-using System.Linq.Expressions;
-using System.ComponentModel;
-using System.Collections;
 using System;
 using System.Reflection;
-using System.Buffers;
-using System.Diagnostics;
 
 namespace Azure.Data
 {
@@ -22,25 +16,25 @@ namespace Azure.Data
 
         internal void Freeze() => _readonly = true;
 
-        protected internal override Data CreateCore(ReadOnlySpan<(string propertyName, object propertyValue)> properties)
+        protected internal override DynamicData CreateDynamicData(ReadOnlySpan<(string propertyName, object propertyValue)> properties)
         {
             var result = new DictionaryStore();
             for (int i = 0; i < properties.Length; i++)
             {
                 var property = properties[i];
-                result.SetPropertyCore(property.propertyName, property.propertyValue);
+                result.SetValue(property.propertyName, property.propertyValue);
             }
             if (_readonly) result.Freeze();
-            return new Data(result);
+            return new DynamicData(result);
         }
 
-        protected internal override void SetPropertyCore(string propertyName, object propertyValue)
+        protected internal override void SetValue(string propertyName, object propertyValue)
         {
             if (_readonly) throw new InvalidOperationException("The data is read-only");
             _properties[propertyName] = propertyValue;
         }
 
-        protected internal override bool TryConvertToCore(Type type, out object converted)
+        protected internal override bool TryConvertTo(Type type, out object converted)
         {
             try
             {
@@ -60,12 +54,12 @@ namespace Azure.Data
             }
         }
 
-        protected internal override bool TryGetAtCore(int index, out object item)
+        protected internal override bool TryGetValueAt(int index, out object item)
         {
             throw new NotImplementedException();
         }
 
-        protected internal override bool TryGetPropertyCore(string propertyName, out object propertyValue)
+        protected internal override bool TryGetValue(string propertyName, out object propertyValue)
             => _properties.TryGetValue(propertyName, out propertyValue);
 
         public override string ToString()

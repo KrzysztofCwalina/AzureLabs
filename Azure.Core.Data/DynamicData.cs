@@ -10,86 +10,83 @@ using System.Diagnostics;
 
 namespace Azure.Data
 {
-    public class Data : IDynamicMetaObjectProvider, IEnumerable<string>
+    // TDODO: is IEnumerable<string> the right thing?
+    public class DynamicData : IDynamicMetaObjectProvider, IEnumerable<string>
     {
         DataStore _store;
-        DataSchema _schema;
+        DataSchema _schema; // TTODO: should schema be exposed?
 
-        public Data() => _store = new DictionaryStore();
+        public DynamicData() => _store = new DictionaryStore();
 
-        public Data(DataStore provider) => _store = provider;
+        public DynamicData(DataStore store) => _store = store;
 
-        public Data(DataSchema schema) : this() => _schema = schema;
+        public DynamicData(DataSchema schema) : this() => _schema = schema;
 
-        public Data(ReadOnlySpan<(string propertyName, object propertyValue)> properties, bool isReadOnly) {
+        public DynamicData(ReadOnlySpan<(string propertyName, object propertyValue)> properties, bool isReadOnly) {
             var store = new DictionaryStore();
             for (int i = 0; i < properties.Length; i++){
                 var property = properties[i];
-                store.SetPropertyCore(property.propertyName, property.propertyValue);
+                store.SetValue(property.propertyName, property.propertyValue);
             }
             if (isReadOnly) store.Freeze(); 
             _store = store;
         }
 
-        public Data(IReadOnlyDictionary<string, object> properties)
+        public DynamicData(IReadOnlyDictionary<string, object> properties)
         {
             var store = new DictionaryStore();
             foreach (var property in properties)
             {
-                store.SetPropertyCore(property.Key, property.Value);
+                store.SetValue(property.Key, property.Value);
             }
             store.Freeze();
             _store = store;
         }
 
-        public static Data Create(params (string propertyName, object propertyValue)[] properties)
-            => new Data(properties, isReadOnly: false);
+        // TODO: I dont like these create methods. 
+        public static DynamicData Create(params (string propertyName, object propertyValue)[] properties)
+            => new DynamicData(properties, isReadOnly: false);
 
-        public static Data CreateReadOnly(params (string propertyName, object propertyValue)[] properties)
-            => new Data(properties, isReadOnly: true);
+        public static DynamicData CreateReadOnly(params (string propertyName, object propertyValue)[] properties)
+            => new DynamicData(properties, isReadOnly: true);
 
         public object this[string propertyName] {
-            get => GetProperty(propertyName);
-            set => SetProperty(propertyName, value);
+            get => GetValue(propertyName);
+            set => SetValue(propertyName, value);
         }
 
         public IEnumerable<string> PropertyNames => _store.PropertyNames;
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="propertyName"></param>
-        /// <param name="propertyValue"></param>
-        /// <returns></returns>
-        /// <remarks>When implemented, propertyValue has to be either a primitive (see IsPrimitive), or a DynamicData instance.</remarks>
 
-        private object GetProperty(string propertyName)
+        private object GetValue(string propertyName)
         {
-            if (_store.TryGetPropertyCore(propertyName, out object value))
+            if (_store.TryGetValue(propertyName, out object value))
             {
-                Debug.Assert(IsPrimitive(value.GetType()) || value is Data);
+                Debug.Assert(IsPrimitive(value.GetType()) || value is DynamicData);
                 return value;
             }
             throw new InvalidOperationException("Property not found");
         }
 
-        private object GetAt(int index)
+        private object GetValueAt(int index)
         {
-            if (_store.TryGetAtCore(index, out object item))
+            if (_store.TryGetValueAt(index, out object item))
             {
                 if (IsPrimitive(item.GetType())) return item;
-                if (item is Data) return item;
+                if (item is DynamicData) return item;
                 else throw new Exception("TryGetAt returned invalid object");
             }
             throw new InvalidOperationException("Property not found");
         }
 
-        private object ConvertTo(Type toType)
+        // TODO (Pri 1): should this be TryGetAs?
+        private object ConvertTo(Type type)
         {
-            if (_store.TryConvertToCore(toType, out var result)) return result;
-            throw new InvalidCastException($"Cannot cast to {toType}.");
+            // TODO: should this be TryGetAs?
+            if (_store.TryConvertTo(type, out var result)) return result;
+            throw new InvalidCastException($"Cannot cast to {type}.");
         }
 
-        private protected virtual object SetProperty(string propertyName, object propertyValue)
+        private protected virtual object SetValue(string propertyName, object propertyValue)
         {
             if (_store.IsReadOnly)
             {
@@ -119,29 +116,29 @@ namespace Azure.Data
                 if (valueType.IsArray)
                 {
                     object[] array = (object[])propertyValue;
-                    Data[] result = new Data[array.Length];
+                    DynamicData[] result = new DynamicData[array.Length];
                     for (int i = 0; i < array.Length; i++)
                     {
-                        result[i] = FromComplex(array[i], ref debth);
+                        result[i] = FromPoco(array[i], ref debth);
                     }
                     propertyValue = result;
                 }
                 else
                 {
-                    propertyValue = FromComplex(propertyValue, ref debth);
+                    propertyValue = FromPoco(propertyValue, ref debth);
                 }
             }
-             _store.SetPropertyCore(propertyName, propertyValue);
+             _store.SetValue(propertyName, propertyValue);
             return propertyValue;
         }
 
         DynamicMetaObject IDynamicMetaObjectProvider.GetMetaObject(Expression parameter) => GetMetaObjectCore(parameter);
 
-        internal virtual DynamicMetaObject GetMetaObjectCore(Expression parameter) => new ReadOnlyMetaObject(parameter, this);
+        internal virtual DynamicMetaObject GetMetaObjectCore(Expression parameter) => new MetaObject(parameter, this);
 
-        internal class ReadOnlyMetaObject : DynamicMetaObject
+        private class MetaObject : DynamicMetaObject
         {
-            internal ReadOnlyMetaObject(Expression parameter, IDynamicMetaObjectProvider value) : base(parameter, BindingRestrictions.Empty, value)
+            internal MetaObject(Expression parameter, IDynamicMetaObjectProvider value) : base(parameter, BindingRestrictions.Empty, value)
             { }
 
             public override DynamicMetaObject BindGetIndex(GetIndexBinder binder, DynamicMetaObject[] indexes)
@@ -150,7 +147,7 @@ namespace Azure.Data
                 var index = (int)indexes[0].Value;
 
                 var targetObject = Expression.Convert(Expression, LimitType);
-                var methodIplementation = typeof(Data).GetMethod(nameof(GetAt), BindingFlags.NonPublic | BindingFlags.Instance);
+                var methodIplementation = typeof(DynamicData).GetMethod(nameof(GetValueAt), BindingFlags.NonPublic | BindingFlags.Instance);
                 var arguments = new Expression[] { Expression.Constant(index) };
 
                 var getPropertyCall = Expression.Call(targetObject, methodIplementation, arguments);
@@ -162,7 +159,7 @@ namespace Azure.Data
             public override DynamicMetaObject BindGetMember(GetMemberBinder binder)
             {
                 var targetObject = Expression.Convert(Expression, LimitType);
-                var methodIplementation = typeof(Data).GetMethod(nameof(GetProperty), BindingFlags.NonPublic | BindingFlags.Instance);
+                var methodIplementation = typeof(DynamicData).GetMethod(nameof(GetValue), BindingFlags.NonPublic | BindingFlags.Instance);
                 var arguments = new Expression[] { Expression.Constant(binder.Name) };
 
                 var getPropertyCall = Expression.Call(targetObject, methodIplementation, arguments);
@@ -181,7 +178,7 @@ namespace Azure.Data
 
                 var restrictions = BindingRestrictions.GetTypeRestriction(Expression, LimitType);
 
-                var methodIplementation = typeof(Data).GetMethod(nameof(ConvertTo), BindingFlags.NonPublic | BindingFlags.Instance);
+                var methodIplementation = typeof(DynamicData).GetMethod(nameof(ConvertTo), BindingFlags.NonPublic | BindingFlags.Instance);
                 Expression expression = Expression.Call(sourceInstance, methodIplementation, new Expression[] { destinationTypeExpression });
                 expression = Expression.Convert(expression, binder.Type);
                 return new DynamicMetaObject(expression, restrictions);
@@ -190,7 +187,7 @@ namespace Azure.Data
             public override DynamicMetaObject BindSetMember(SetMemberBinder binder, DynamicMetaObject value)
             {
                 Expression targetObject = Expression.Convert(Expression, LimitType);
-                var methodImplementation = typeof(Data).GetMethod(nameof(SetProperty), BindingFlags.NonPublic | BindingFlags.Instance);
+                var methodImplementation = typeof(DynamicData).GetMethod(nameof(SetValue), BindingFlags.NonPublic | BindingFlags.Instance);
                 var arguments = new Expression[2] { Expression.Constant(binder.Name), Expression.Convert(value.Expression, typeof(object)) };
 
                 Expression setPropertyCall = Expression.Call(targetObject, methodImplementation, arguments);
@@ -200,48 +197,50 @@ namespace Azure.Data
             }
         }
 
-        internal Data FromComplex(object obj, ref int allowedDebth)
+        // TODO: do we want to allow cycles?
+        private DynamicData FromPoco(object poco, ref int allowedRecursionDebth)
         {
-            if (--allowedDebth < 0) throw new InvalidOperationException("Object grath too deep");
+            if (--allowedRecursionDebth < 0) throw new InvalidOperationException("Object grath too deep");
 
-            var type = obj.GetType();
-            Debug.Assert(!IsPrimitive(type));
-            Debug.Assert(!IsPrimitiveArray(type));
+            var pocoType = poco.GetType();
+            Debug.Assert(!IsPrimitive(pocoType));
+            Debug.Assert(!IsPrimitiveArray(pocoType));
 
-            var result = obj as Data;
+            var result = poco as DynamicData;
             if (result != null) return result;
 
-            var objectProperties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
-            (string, object)[] properties = ArrayPool<(string, object)>.Shared.Rent(objectProperties.Length);
+            var pocoProperties = pocoType.GetProperties(BindingFlags.Public | BindingFlags.Instance);
+            (string, object)[] dynamicDataProperties = ArrayPool<(string, object)>.Shared.Rent(pocoProperties.Length);
             try
             {
-                for (int i = 0; i < objectProperties.Length; i++)
+                for (int i = 0; i < pocoProperties.Length; i++)
                 {
-                    var property = objectProperties[i];
-                    string name = property.Name;
-                    object value = property.GetValue(obj);
-                    if (value != null && !IsPrimitive(value.GetType())) value = FromComplex(value, ref allowedDebth);
-                    properties[i] = (name, value);
+                    var pocoProperty = pocoProperties[i];
+                    string propertyName = pocoProperty.Name;
+                    object propertyValue = pocoProperty.GetValue(poco);
+                    if (propertyValue != null && !IsPrimitive(propertyValue.GetType())) propertyValue = FromPoco(propertyValue, ref allowedRecursionDebth);
+                    dynamicDataProperties[i] = (propertyName, propertyValue);
                 }
 
-                return _store.CreateCore(properties.AsSpan(0, objectProperties.Length));
+                return _store.CreateDynamicData(dynamicDataProperties.AsSpan(0, pocoProperties.Length));
             }
             finally
             {
-                if (properties != null) ArrayPool<(string, object)>.Shared.Return(properties);
+                if (dynamicDataProperties != null) ArrayPool<(string, object)>.Shared.Return(dynamicDataProperties);
             }
         }
 
         // TODO: this needs to be fixed. maybe we need converters
         // primitives are: Boolean, Byte, SByte, Int16, UInt16, Int32, UInt32, Int64, UInt64, IntPtr, UIntPtr, Char, Double, and Single.
         // What about: decimal, DateTime, DateTimeOffset, TimeSpan
-        protected bool IsPrimitive(Type type)
+        // TODO: should these be combined? 
+        private static bool IsPrimitive(Type type)
         {
             if (type == typeof(string)) return true;
             if (type.IsPrimitive) return true;
             return false;
         }
-        protected bool IsPrimitiveArray(Type type)
+        private static bool IsPrimitiveArray(Type type)
         {
             if (type.IsArray && IsPrimitive(type.GetElementType())) return true;
             return false;

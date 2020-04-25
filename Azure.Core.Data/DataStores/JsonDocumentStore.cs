@@ -2,34 +2,39 @@
 using System;
 using System.IO;
 using System.Text.Json;
-using System.Threading.Tasks;
-using System.Threading;
 using System.Diagnostics;
+using System.Text;
 
 namespace Azure.Data
 {
-    public class JsonDocumentStore : DataStore
+    internal class JsonDocumentStore : DataStore
     {
-        private JsonElement _json;
-        private object _originalData;
         private bool _deserialized;
+        private object _originalData; // either string or stream
 
-        public JsonDocumentStore(string jsonObject)
+        private JsonElement _root; // DO NOT ACCESS THIS DIRECTLY. USE GetRootElement METHOD.
+        private JsonElement GetRoot()
         {
-            _originalData = jsonObject;
+            if (!_deserialized) Deserialize();
+            return _root;
         }
 
-        public JsonDocumentStore(Stream jsonObject)
-        {
-            _originalData = jsonObject;
+        public JsonDocumentStore(string jsonObject) => _originalData = jsonObject;
 
+        public JsonDocumentStore(Stream jsonObject) => _originalData = jsonObject;
+
+        public JsonDocumentStore(JsonElement jsonObject)
+        {
+            if (jsonObject.ValueKind != JsonValueKind.Object && jsonObject.ValueKind != JsonValueKind.Array) throw new InvalidOperationException("JSON is not an object or array");
+            _root = jsonObject;
+            _deserialized = true;
         }
 
-        public JsonDocumentStore(JsonDocumentStore copy)
+        public JsonDocumentStore(JsonDocumentStore original)
         {
-            _json = copy._json;
-            _originalData = copy._originalData;
-            _deserialized = copy._deserialized;
+            _root = original._root;
+            _originalData = original._originalData;
+            _deserialized = original._deserialized;
         }
 
         private void Deserialize()
@@ -39,41 +44,24 @@ namespace Azure.Data
             if (jsonString != null)
             {
                 var document = JsonDocument.Parse(jsonString);
-                _json = document.RootElement;
+                _root = document.RootElement;
             }
             else
             {
                 var jsonStream = _originalData as Stream;
                 var document = JsonDocument.Parse(jsonStream);
-                _json = document.RootElement;
+                _root = document.RootElement;
             }
-            if (_json.ValueKind != JsonValueKind.Object && _json.ValueKind != JsonValueKind.Array) throw new InvalidOperationException("JSON is not an object or array");
-            _deserialized = true;
-        }
-        private JsonElement GetJsonElement()
-        {
-            if (!_deserialized) Deserialize();
-            return _json;
-        }
-        public static async Task<Data> CreateAsync(Stream json, CancellationToken cancellationToken)
-        {
-            var document = await JsonDocument.ParseAsync(json, default, cancellationToken).ConfigureAwait(false);
-            return new Data(new JsonDocumentStore(document.RootElement));
-        }
-
-        public JsonDocumentStore(JsonElement jsonObject)
-        {
-            if (jsonObject.ValueKind != JsonValueKind.Object && jsonObject.ValueKind != JsonValueKind.Array) throw new InvalidOperationException("JSON is not an object or array");
-            _json = jsonObject;
+            if (_root.ValueKind != JsonValueKind.Object && _root.ValueKind != JsonValueKind.Array) throw new InvalidOperationException("JSON is not an object or array");
             _deserialized = true;
         }
 
-        protected internal override Data CreateCore(ReadOnlySpan<(string propertyName, object propertyValue)> properties)
+        protected internal override DynamicData CreateDynamicData(ReadOnlySpan<(string propertyName, object propertyValue)> properties)
             => throw new NotImplementedException();
 
         protected internal override IEnumerable<string> PropertyNames {
             get {
-                JsonElement element = GetJsonElement();
+                JsonElement element = GetRoot();
                 if (element.ValueKind == JsonValueKind.Object)
                 {
                     foreach (var property in element.EnumerateObject())
@@ -84,9 +72,10 @@ namespace Azure.Data
             }
         }
 
-        protected internal override bool TryGetPropertyCore(string propertyName, out object propertyValue)
+        // TODO: the UTF16 string has 30% perf overhead for simple property lookups
+        protected internal override bool TryGetValue(string propertyName, out object propertyValue)
         {
-            JsonElement json = GetJsonElement();
+            JsonElement json = GetRoot();
             if (!json.TryGetProperty(propertyName, out JsonElement element))
             {
                 propertyValue = default;
@@ -96,7 +85,47 @@ namespace Azure.Data
             return TryGetValue(element, out propertyValue);
         }
 
-        private bool TryGetValue(JsonElement element, out object value, Type type = default)
+        protected internal override bool TryGetValueAt(int index, out object item)
+        {
+            item = default;
+            JsonElement json = GetRoot();
+            if (json.ValueKind != JsonValueKind.Array) return false;
+            JsonElement itemElement = json[index];
+            return TryGetValue(itemElement, out item);
+        }
+
+        protected internal override bool TryConvertTo(Type type, out object converted)
+        {
+            JsonElement json = GetRoot();
+            if (json.ValueKind == JsonValueKind.Array && !DataSchema.IsPrimitiveArray(type))
+            {
+                var items = json.GetArrayLength();
+                var array = new DynamicData[items];
+                int index = 0;
+                foreach (var item in json.EnumerateArray())
+                {
+                    array[index++] = new DynamicData(new JsonDocumentStore(item)); // TODO: this will throw for primitives.
+                }
+                converted = array;
+                return true;
+            }
+            try
+            {
+                converted = JsonSerializer.Deserialize(json.GetRawText(), type);
+                return true;
+            }
+            catch { }
+
+            converted = default;
+            return false;
+        }
+
+        protected internal override bool IsReadOnly => true;
+
+        protected internal override void SetValue(string propertyName, object propertyValue)
+            => new InvalidOperationException("This object is read-only");
+
+        private static bool TryGetValue(JsonElement element, out object value)
         {
             switch (element.ValueKind)
             {
@@ -113,25 +142,18 @@ namespace Azure.Data
                     value = null;
                     break;
                 case JsonValueKind.Object:
-                    value = new Data(new JsonDocumentStore(element));
+                    value = new DynamicData(new JsonDocumentStore(element));
                     break;
                 case JsonValueKind.Number:
-                    if (type == default)
+                    if(element.TryGetInt64(out long longValue))
                     {
-                        if (element.TryGetDouble(out var doubleValue))
-                        {
-                            value = doubleValue;
-                            break;
-                        }
+                        value = (double)longValue;
+                        return true;
                     }
-                    if (type == typeof(object))
-                    {
-                        value = BestFitNumber(element);
-                        break;
-                    }
-                    throw new NotImplementedException();
+                    value = element.GetDouble(); // TODO: but the double parser is really bad!
+                    break;
                 case JsonValueKind.Array:
-                    value = new Data(new JsonDocumentStore(element));
+                    value = new DynamicData(new JsonDocumentStore(element));
                     break;
                 default:
                     throw new NotImplementedException("this should never happen");
@@ -139,117 +161,10 @@ namespace Azure.Data
             return true;
         }
 
-        private object BestFitNumber(JsonElement element)
-        {
-            // TODO: is this what we want? i.e. we return the smallest integer if the value fits, the floats, the decimal.
-            if (element.TryGetUInt64(out var ulongValue))
-            {
-                if (ulongValue <= uint.MaxValue)
-                {
-                    if (ulongValue <= ushort.MaxValue)
-                    {
-                        if (ulongValue <= byte.MaxValue)
-                        {
-                            return (byte)ulongValue;
-                        }
-
-                        return (ushort)ulongValue;
-                    }
-
-                    return (uint)ulongValue;
-                }
-
-                return ulongValue;
-            }
-
-            // the value is negative
-            if (element.TryGetInt64(out var longValue))
-            {
-                if (longValue >= int.MinValue)
-                {
-                    if (longValue >= short.MinValue)
-                    {
-                        if (longValue >= sbyte.MinValue)
-                        {
-                            return (sbyte)longValue;
-                        }
-
-                        return (short)longValue;
-                    }
-
-                    return (int)longValue;
-                }
-
-                return longValue;
-            }
-
-            if (element.TryGetSingle(out var singleValue))
-            {
-                return singleValue;
-            }
-
-            if (element.TryGetDouble(out var doubleValue))
-            {
-                return doubleValue;
-            }
-
-            if (element.TryGetDecimal(out var decimalValue))
-            {
-                return decimalValue;
-            }
-            throw new NotImplementedException("this should never happen");
-        }
-        protected internal override bool TryGetAtCore(int index, out object item)
-        {
-            item = default;
-            JsonElement json = GetJsonElement();
-            if (json.ValueKind != JsonValueKind.Array) return false;
-            JsonElement itemElement = json[index];
-            return TryGetValue(itemElement, out item);
-        }
-
-        public object ToType(Type type)
-        {
-            JsonElement json = GetJsonElement();
-            var result = JsonSerializer.Deserialize(json.GetRawText(), type);
-            return result;
-        }
-
-        protected internal override bool TryConvertToCore(Type type, out object converted)
-        {
-            JsonElement json = GetJsonElement();
-            if (json.ValueKind == JsonValueKind.Array && !DataSchema.IsPrimitiveArray(type))
-            {
-                var items = json.GetArrayLength();
-                var array = new Data[items];
-                int index = 0;
-                foreach (var item in json.EnumerateArray())
-                {
-                    array[index++] = new Data(new JsonDocumentStore(item)); // TODO: this will throw for primitives.
-                }
-                converted = array;
-                return true;
-            }
-            try
-            {
-                converted = JsonSerializer.Deserialize(json.GetRawText(), type);
-                return true;
-            }
-            catch { }
-
-            converted = default;
-            return false;
-        }
-
         public override string ToString()
         {
             if (_originalData is string) return (string)_originalData;
             else return base.ToString();
         }
-
-        protected internal override bool IsReadOnly => true;
-
-        protected internal override void SetPropertyCore(string propertyName, object propertyValue)
-            => new InvalidOperationException("This object is read-only");
     }
 }

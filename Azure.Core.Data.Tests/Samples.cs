@@ -8,7 +8,7 @@ namespace Azure.Data.Tests
         [Test]
         public void S01_HelloWorld()
         {
-            dynamic contact = new Data();
+            dynamic contact = new DynamicData();
             contact.First = "John";
             contact.Last = "Smith";
             contact.Age = 25;
@@ -23,7 +23,7 @@ namespace Azure.Data.Tests
         [Test]
         public void S02_Deserialize()
         {
-            dynamic address = new Data();
+            dynamic address = new DynamicData();
             address.Zip = 98052;
             address.City = "Redmond";
 
@@ -39,7 +39,7 @@ namespace Azure.Data.Tests
             address.City = "Redmond";
             address.Zip = 98052;
 
-            dynamic contact = new Data();
+            dynamic contact = new DynamicData();
             contact.Address = address;
 
             Assert.AreEqual("Redmond", contact.Address.City);
@@ -49,7 +49,7 @@ namespace Azure.Data.Tests
         [Test]
         public void S04_AnonymousValue()
         {
-            dynamic contact = new Data();
+            dynamic contact = new DynamicData();
             contact.Address = new { Zip = 98052, City = "Redmond" };
 
             Assert.AreEqual("Redmond", contact.Address.City);
@@ -84,7 +84,7 @@ namespace Azure.Data.Tests
         [Test]
         public void S06_ReadOnly()
         {
-            Data data = Data.CreateReadOnly(
+            DynamicData data = DynamicData.CreateReadOnly(
                 ("First", "John"),
                 ("Last", "Smith"),
                 ("Age", 25)
@@ -104,7 +104,7 @@ namespace Azure.Data.Tests
         [Test]
         public void S07_Indexer()
         {
-            var data = new Data();
+            var data = new DynamicData();
             data["First"] = "John";
             data["Last"] = "Smith";
             data["Age"] = 25;

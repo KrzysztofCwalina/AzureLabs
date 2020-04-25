@@ -2,7 +2,7 @@
 <html lang='en'>
 <head>
 <meta charset='utf-8' />
-<title>DynamicJsonBench-20200424-175344</title>
+<title>DynamicJsonBench-20200425-115238</title>
 
 <style type="text/css">
 	table { border-collapse: collapse; display: block; width: 100%; overflow: auto; }
@@ -23,18 +23,10 @@ Intel Core i7-6700K CPU 4.00GHz (Skylake), 1 CPU, 8 logical and 4 physical cores
 </code></pre>
 
 <table>
-<thead><tr><th>         Method</th><th>Mean</th><th>Error</th><th>StdDev</th><th>Ratio</th><th>RatioSD</th>
+<thead><tr><th>          Method</th><th>Mean</th><th>Error</th><th>StdDev</th><th>Gen 0</th><th>Gen 1</th><th>Gen 2</th><th>Allocated</th>
 </tr>
-</thead><tbody><tr><td>IndexerPerfectHash</td><td>4.786 ns</td><td>0.1467 ns</td><td>0.1372 ns</td><td>0.24</td><td>0.01</td>
-</tr><tr><td>IndexerData</td><td>25.857 ns</td><td>0.5211 ns</td><td>0.4351 ns</td><td>1.30</td><td>0.02</td>
-</tr><tr><td>IndexerJsonData</td><td>84.516 ns</td><td>0.4519 ns</td><td>0.4227 ns</td><td>4.26</td><td>0.03</td>
-</tr><tr><td>IndexerSearchDocument</td><td>17.794 ns</td><td>0.0603 ns</td><td>0.0535 ns</td><td>0.90</td><td>0.01</td>
-</tr><tr><td>IndexerDictionary</td><td>19.842 ns</td><td>0.1236 ns</td><td>0.1156 ns</td><td>1.00</td><td>0.00</td>
-</tr><tr><td>DynamicPerfectHash</td><td>7.021 ns</td><td>0.0486 ns</td><td>0.0406 ns</td><td>0.35</td><td>0.00</td>
-</tr><tr><td>DynamicJsonData</td><td>89.379 ns</td><td>0.5695 ns</td><td>0.4446 ns</td><td>4.51</td><td>0.04</td>
-</tr><tr><td>DynamicData</td><td>25.672 ns</td><td>0.0282 ns</td><td>0.0220 ns</td><td>1.30</td><td>0.01</td>
-</tr><tr><td>DynamicSearchDocument</td><td>48.226 ns</td><td>0.1671 ns</td><td>0.1481 ns</td><td>2.43</td><td>0.01</td>
-</tr><tr><td>DynamicObject</td><td>6.283 ns</td><td>0.0234 ns</td><td>0.0196 ns</td><td>0.32</td><td>0.00</td>
+</thead><tbody><tr><td>IndexerHandcraftedHash</td><td>3.916 ns</td><td>0.0733 ns</td><td>0.0685 ns</td><td>-</td><td>-</td><td>-</td><td>-</td>
+</tr><tr><td>IndexerPerfectHash</td><td>4.868 ns</td><td>0.0418 ns</td><td>0.0370 ns</td><td>-</td><td>-</td><td>-</td><td>-</td>
 </tr></tbody></table>
 </body>
 </html>

@@ -9,10 +9,10 @@ namespace Azure.Data
     {
         private JsonData() { }
 
-        public static Data Create(string s_demo_payload)
+        public static DynamicData Create(string s_demo_payload)
         {
             var store = new JsonDocumentStore(s_demo_payload);
-            return new Data(store);
+            return new DynamicData(store);
         }
         public static DataStore CreateStore(string s_demo_payload)
         {

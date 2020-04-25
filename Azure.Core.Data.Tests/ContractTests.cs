@@ -1,22 +1,31 @@
+using Azure.Core.Data.DataStores;
 using NUnit.Framework;
 using System;
-using System.Collections;
-using System.Dynamic;
+using System.Collections.Generic;
 
 namespace Azure.Data.Tests
 {
     public class ContractTests
     {
-        static IEnumerable Models {
-            get {
-                yield return new Func<IDynamicMetaObjectProvider>(() => { return new Data(); });
-            }
+        [Test]
+        public void PerfectHash()
+        {
+            var dictionary = new Dictionary<string, object>();
+            dictionary.Add("a", 1);
+
+            DataStore store;
+
+            store = PerfectHashStore.Create(dictionary);
+            Assert.IsNotNull(store);
+
+            dictionary.Add("b", 2);
+            store = PerfectHashStore.Create(dictionary);
+            Assert.IsNotNull(store);
         }
 
-        [TestCaseSource(typeof(ContractTests), "Models")]
-        public void SetProperties(Func<IDynamicMetaObjectProvider> dynamicObjectFactory)
+        public void SetProperties()
         {
-            dynamic d = dynamicObjectFactory();
+            dynamic d = new DynamicData();
             d.PString = "hello world";
             d.PInt32 = 32;
 
@@ -27,8 +36,8 @@ namespace Azure.Data.Tests
         [Test]
         public void Cycle()
         {
-            dynamic a = new Data();
-            dynamic b = new Data();
+            dynamic a = new DynamicData();
+            dynamic b = new DynamicData();
             a.B = b;
             b.A = a;
         }
@@ -42,7 +51,7 @@ namespace Azure.Data.Tests
             a.FooProperty = b;
             b.FooProperty = a;
 
-            dynamic d = new Data();
+            dynamic d = new DynamicData();
 
             // TODO: should this throw?
             Assert.Throws<InvalidOperationException>(() => {
@@ -53,14 +62,14 @@ namespace Azure.Data.Tests
         [Test]
         public void PrimitiveArray()
         {
-            dynamic a = new Data();
+            dynamic a = new DynamicData();
             a.Items = new int[] { 1, 2, 3 };
         }
 
         [Test]
         public void ComplexArray()
         {
-            dynamic a = new Data();
+            dynamic a = new DynamicData();
             a.Items = new Foo[] { new Foo() };
         }
 

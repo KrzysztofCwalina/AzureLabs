@@ -1,13 +1,13 @@
-﻿using Azure.Data;
+﻿using Azure.Core.Data.DataStores;
+using Azure.Data;
 using Azure.Search.Documents.Models;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Jobs;
 using BenchmarkDotNet.Running;
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 
+[MemoryDiagnoser]
 [SimpleJob(RuntimeMoniker.NetCoreApp30)]
 public class DynamicJsonBench
 {
@@ -23,7 +23,7 @@ public class DynamicJsonBench
 
     static IReadOnlyDictionary<string, object> dictionary;
 
-    static Data jsonData;
+    static DynamicData jsonData;
     static dynamic dynamicJsonData;
 
     static SearchDocument searchDocument;
@@ -33,10 +33,13 @@ public class DynamicJsonBench
     static dynamic dynamicObject;
         
     // TODO: this shoould also test read-only data and with perfect hash
-    static Data data;
+    static DynamicData data;
     static dynamic dynamicData = data;
 
-    static Data perfectHash;
+    static DynamicData handcraftedHash;
+    static dynamic dynamicHandcraftedHash;
+
+    static DynamicData perfectHash;
     static dynamic dynamicPerfectHash;
 
     [GlobalSetup]
@@ -49,7 +52,7 @@ public class DynamicJsonBench
         jsonData = JsonData.Create(s_demo_payload);
         dynamicJsonData = jsonData;
 
-        data = new Data();
+        data = new DynamicData();
         dynamicData = data;
 
         foreach (var property in jsonData.PropertyNames)
@@ -64,9 +67,15 @@ public class DynamicJsonBench
         staticObject = (Payload)dynamicJsonData;
         dynamicObject = staticObject;
 
-        perfectHash = new Data(new PerfectStore(properties));
+        handcraftedHash = new DynamicData(new PerfectStore(properties));
+        dynamicHandcraftedHash = handcraftedHash;
+
+        perfectHash = new DynamicData(PerfectHashStore.Create(properties));
         dynamicPerfectHash = perfectHash;
     }
+
+    [Benchmark]
+    public string IndexerHandcraftedHash() => (string)handcraftedHash["Id"];
 
     [Benchmark]
     public string IndexerPerfectHash() => (string)perfectHash["Id"];
@@ -78,9 +87,12 @@ public class DynamicJsonBench
     public string IndexerJsonData() => (string)jsonData["Id"];
 
     [Benchmark]
+    public double IndexerJsonNumber() => (double)jsonData["Temperature"];
+
+    [Benchmark]
     public string IndexerSearchDocument() => (string)searchDocument["Id"];
 
-    [Benchmark(Baseline=true)]
+    [Benchmark(Baseline = true)]
     public string IndexerDictionary() => (string)dictionary["Id"];
 
     [Benchmark]
@@ -134,26 +146,26 @@ class PerfectStore : DataStore
         }
     }
 
-    protected override bool IsReadOnly => false;
+    protected override bool IsReadOnly => true;
 
     private static int GetIndex(string key) => key[0] - 67;
 
-    protected override bool TryGetPropertyCore(string propertyName, out object propertyValue)
+    protected override bool TryGetValue(string propertyName, out object propertyValue)
     {
         propertyValue = _values[GetIndex(propertyName)];
         return propertyValue != null;
     }
 
-    protected override Data CreateCore(ReadOnlySpan<(string propertyName, object propertyValue)> properties)
+    protected override DynamicData CreateDynamicData(ReadOnlySpan<(string propertyName, object propertyValue)> properties)
         => throw new NotImplementedException();
 
-    protected override void SetPropertyCore(string propertyName, object propertyValue)
+    protected override void SetValue(string propertyName, object propertyValue)
         => throw new NotImplementedException();
 
-    protected override bool TryConvertToCore(Type type, out object converted)
+    protected override bool TryConvertTo(Type type, out object converted)
         => throw new NotImplementedException();
 
-    protected override bool TryGetAtCore(int index, out object item)
+    protected override bool TryGetValueAt(int index, out object item)
         => throw new NotImplementedException();
 
     protected override IEnumerable<string> PropertyNames 

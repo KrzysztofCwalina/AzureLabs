@@ -1,5 +1,7 @@
+using Azure.Core.Data.DataStores;
 using NUnit.Framework;
 using System;
+using System.Collections.Generic;
 
 namespace Azure.Data.Tests
 {
@@ -59,7 +61,7 @@ namespace Azure.Data.Tests
         public void Dtdl()
         {
             var schema = DtDlParser.ParseFile("Thermostat.dtdl");
-            dynamic model = new Data(schema);
+            dynamic model = new DynamicData(schema);
 
             model.setPointTemp = 97.5;
 
@@ -72,7 +74,7 @@ namespace Azure.Data.Tests
         [Test]
         public void DynamicTypeSystemDemo()
         {
-            Data twin = JsonData.Create(s_demo_payload);
+            DynamicData twin = JsonData.Create(s_demo_payload);
 
             string original = twin.ToString();
             Assert.IsTrue(ReferenceEquals(s_demo_payload, original));
@@ -103,7 +105,7 @@ namespace Azure.Data.Tests
         }
 
         // DigitalTwin Library Type
-        public class DigitalTwin : Data
+        public class DigitalTwin : DynamicData
         {
             public DigitalTwin(string json) : base(JsonData.CreateStore(json)) { }
 

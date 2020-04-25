@@ -10,7 +10,7 @@ namespace Azure.Data.Tests
         [Test]
         public void ReadJson()
         {
-            Data json = JsonData.Create(s_contact1);
+            DynamicData json = JsonData.Create(s_contact1);
             dynamic contact = json;
 
             Assert.AreEqual("John", contact.First);
@@ -54,13 +54,13 @@ namespace Azure.Data.Tests
         [Test]
         public void Dictionary()
         {
-            Data contact = JsonData.Create(s_contact1);
+            DynamicData contact = JsonData.Create(s_contact1);
 
             Assert.AreEqual("John", contact["First"]);
             Assert.AreEqual("Smith", contact["Last"]);
             Assert.AreEqual(25, contact["Age"]);
 
-            var address = (Data)contact["Address"];
+            var address = (DynamicData)contact["Address"];
             Assert.AreEqual(98052, address["Zip"]);
             Assert.AreEqual("Redmond", address["City"]);
 

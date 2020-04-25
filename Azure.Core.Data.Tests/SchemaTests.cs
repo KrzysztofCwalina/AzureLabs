@@ -10,7 +10,7 @@ namespace Azure.Data.Tests
         {
             var schema = JsonSchemaParser.ParseFile("ContactSchema.json");
 
-            dynamic contact = new Data(schema);
+            dynamic contact = new DynamicData(schema);
 
             contact.First = "John";
             contact.Last = "Smith";
