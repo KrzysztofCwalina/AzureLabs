@@ -5,6 +5,22 @@ using System.Text.Json;
 
 namespace Azure.Data
 {
+    public class JsonData
+    {
+        private JsonData() { }
+
+        public static Data Create(string s_demo_payload)
+        {
+            var store = new JsonDocumentStore(s_demo_payload);
+            return new Data(store);
+        }
+        public static DataStore CreateStore(string s_demo_payload)
+        {
+            var store = new JsonDocumentStore(s_demo_payload);
+            return store;
+        }
+    }
+
     public static class JsonSchemaParser
     {
         public static DataSchema ParseFile(string filename)

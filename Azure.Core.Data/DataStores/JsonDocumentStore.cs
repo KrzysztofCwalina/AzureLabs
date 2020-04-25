@@ -8,40 +8,24 @@ using System.Diagnostics;
 
 namespace Azure.Data
 {
-    public class JsonData 
-    {
-        private JsonData() { }
-
-        public static Data Create(string s_demo_payload)
-        {
-            var store = new ReadOnlyJsonStore(s_demo_payload);
-            return new Data(store);
-        }
-        public static DataStore CreateStore(string s_demo_payload)
-        {
-            var store = new ReadOnlyJsonStore(s_demo_payload);
-            return store;
-        }
-    }
-
-    public class ReadOnlyJsonStore : DataStore
+    public class JsonDocumentStore : DataStore
     {
         private JsonElement _json;
         private object _originalData;
         private bool _deserialized;
 
-        public ReadOnlyJsonStore(string jsonObject)
+        public JsonDocumentStore(string jsonObject)
         {
             _originalData = jsonObject;
         }
 
-        public ReadOnlyJsonStore(Stream jsonObject)
+        public JsonDocumentStore(Stream jsonObject)
         {
             _originalData = jsonObject;
 
         }
 
-        public ReadOnlyJsonStore(ReadOnlyJsonStore copy)
+        public JsonDocumentStore(JsonDocumentStore copy)
         {
             _json = copy._json;
             _originalData = copy._originalData;
@@ -74,10 +58,10 @@ namespace Azure.Data
         public static async Task<Data> CreateAsync(Stream json, CancellationToken cancellationToken)
         {
             var document = await JsonDocument.ParseAsync(json, default, cancellationToken).ConfigureAwait(false);
-            return new Data(new ReadOnlyJsonStore(document.RootElement));
+            return new Data(new JsonDocumentStore(document.RootElement));
         }
 
-        public ReadOnlyJsonStore(JsonElement jsonObject)
+        public JsonDocumentStore(JsonElement jsonObject)
         {
             if (jsonObject.ValueKind != JsonValueKind.Object && jsonObject.ValueKind != JsonValueKind.Array) throw new InvalidOperationException("JSON is not an object or array");
             _json = jsonObject;
@@ -129,7 +113,7 @@ namespace Azure.Data
                     value = null;
                     break;
                 case JsonValueKind.Object:
-                    value = new Data(new ReadOnlyJsonStore(element));
+                    value = new Data(new JsonDocumentStore(element));
                     break;
                 case JsonValueKind.Number:
                     if (type == default)
@@ -147,7 +131,7 @@ namespace Azure.Data
                     }
                     throw new NotImplementedException();
                 case JsonValueKind.Array:
-                    value = new Data(new ReadOnlyJsonStore(element));
+                    value = new Data(new JsonDocumentStore(element));
                     break;
                 default:
                     throw new NotImplementedException("this should never happen");
@@ -241,7 +225,7 @@ namespace Azure.Data
                 int index = 0;
                 foreach (var item in json.EnumerateArray())
                 {
-                    array[index++] = new Data(new ReadOnlyJsonStore(item)); // TODO: this will throw for primitives.
+                    array[index++] = new Data(new JsonDocumentStore(item)); // TODO: this will throw for primitives.
                 }
                 converted = array;
                 return true;
