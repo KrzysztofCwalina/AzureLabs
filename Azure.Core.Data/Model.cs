@@ -18,11 +18,5 @@ namespace Azure.Data
 
         public static Data CreateWithJsonSchema(string schemaFile)
             => Create(JsonSchemaParser.ParseFile(schemaFile));
-
-        public static Data CreateFromReadOnlyDictionary(IReadOnlyDictionary<string, object> properties) => new Data(properties);
-        public static ReadOnlyModel CreateFromJson(string jsonObject) => new ReadOnlyJson(jsonObject);
-        public static ReadOnlyModel CreateFromJson(Stream jsonObject) => new ReadOnlyJson(jsonObject);
-
-        public static async Task<ReadOnlyModel> CreateFromJsonAsync(Stream jsonObject, CancellationToken cancellationToken = default) => await ReadOnlyJson.CreateAsync(jsonObject, cancellationToken);
     }
 }

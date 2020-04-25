@@ -72,8 +72,7 @@ namespace Azure.Data.Tests
         [Test]
         public void DynamicTypeSystemDemo()
         {
-            // ReadOnlyJson is a type we woudl add to Azure.Core
-            var twin = new ReadOnlyJson(s_demo_payload);
+            Data twin = JsonData.Create(s_demo_payload);
 
             string original = twin.ToString();
             Assert.IsTrue(ReferenceEquals(s_demo_payload, original));
@@ -104,10 +103,9 @@ namespace Azure.Data.Tests
         }
 
         // DigitalTwin Library Type
-        public class DigitalTwin : ReadOnlyJson
+        public class DigitalTwin : Data
         {
-            public DigitalTwin(string json) : base(json) { }
-            public DigitalTwin(ReadOnlyJson json) : base(json) { }
+            public DigitalTwin(string json) : base(JsonData.CreateStore(json)) { }
 
             public T As<T>() where T: DigitalTwin => (T)Activator.CreateInstance(typeof(T), new object[] { (DigitalTwin)this });
 
@@ -121,7 +119,7 @@ namespace Azure.Data.Tests
         {
             public TemperatureSensor(string json) : base(json) { }
 
-            public TemperatureSensor(DigitalTwin twin) : base(twin) { }
+            public TemperatureSensor(DigitalTwin twin) : base(twin.ToString()) { }
 
             public string Unit => (string)this["Unit"];
             public double Temperature => (double)this["Temperature"];

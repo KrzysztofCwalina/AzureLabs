@@ -8,24 +8,40 @@ using System.Diagnostics;
 
 namespace Azure.Data
 {
-    public class ReadOnlyJson : ReadOnlyModel
+    public class JsonData 
+    {
+        private JsonData() { }
+
+        public static Data Create(string s_demo_payload)
+        {
+            var store = new ReadOnlyJsonStore(s_demo_payload);
+            return new Data(store);
+        }
+        public static DataStore CreateStore(string s_demo_payload)
+        {
+            var store = new ReadOnlyJsonStore(s_demo_payload);
+            return store;
+        }
+    }
+
+    public class ReadOnlyJsonStore : DataStore
     {
         private JsonElement _json;
         private object _originalData;
         private bool _deserialized;
 
-        public ReadOnlyJson(string jsonObject)
+        public ReadOnlyJsonStore(string jsonObject)
         {
             _originalData = jsonObject;
         }
 
-        public ReadOnlyJson(Stream jsonObject)
+        public ReadOnlyJsonStore(Stream jsonObject)
         {
             _originalData = jsonObject;
 
         }
 
-        public ReadOnlyJson(ReadOnlyJson copy)
+        public ReadOnlyJsonStore(ReadOnlyJsonStore copy)
         {
             _json = copy._json;
             _originalData = copy._originalData;
@@ -50,27 +66,28 @@ namespace Azure.Data
             if (_json.ValueKind != JsonValueKind.Object && _json.ValueKind != JsonValueKind.Array) throw new InvalidOperationException("JSON is not an object or array");
             _deserialized = true;
         }
-        private JsonElement GetJsonElement() { 
+        private JsonElement GetJsonElement()
+        {
             if (!_deserialized) Deserialize();
             return _json;
         }
-        public static async Task<ReadOnlyJson> CreateAsync(Stream json, CancellationToken cancellationToken)
+        public static async Task<Data> CreateAsync(Stream json, CancellationToken cancellationToken)
         {
             var document = await JsonDocument.ParseAsync(json, default, cancellationToken).ConfigureAwait(false);
-            return new ReadOnlyJson(document.RootElement);
+            return new Data(new ReadOnlyJsonStore(document.RootElement));
         }
 
-        public ReadOnlyJson(JsonElement jsonObject)
+        public ReadOnlyJsonStore(JsonElement jsonObject)
         {
             if (jsonObject.ValueKind != JsonValueKind.Object && jsonObject.ValueKind != JsonValueKind.Array) throw new InvalidOperationException("JSON is not an object or array");
             _json = jsonObject;
             _deserialized = true;
         }
 
-        protected override ReadOnlyModel CreateCore(ReadOnlySpan<(string propertyName, object propertyValue)> properties)
+        protected internal override Data CreateCore(ReadOnlySpan<(string propertyName, object propertyValue)> properties)
             => throw new NotImplementedException();
 
-        public override IEnumerable<string> PropertyNames {
+        protected internal override IEnumerable<string> PropertyNames {
             get {
                 JsonElement element = GetJsonElement();
                 if (element.ValueKind == JsonValueKind.Object)
@@ -83,7 +100,7 @@ namespace Azure.Data
             }
         }
 
-        protected override bool TryGetPropertyCore(string propertyName, out object propertyValue)
+        protected internal override bool TryGetPropertyCore(string propertyName, out object propertyValue)
         {
             JsonElement json = GetJsonElement();
             if (!json.TryGetProperty(propertyName, out JsonElement element))
@@ -112,7 +129,7 @@ namespace Azure.Data
                     value = null;
                     break;
                 case JsonValueKind.Object:
-                    value = new ReadOnlyJson(element);
+                    value = new Data(new ReadOnlyJsonStore(element));
                     break;
                 case JsonValueKind.Number:
                     if (type == default)
@@ -130,7 +147,7 @@ namespace Azure.Data
                     }
                     throw new NotImplementedException();
                 case JsonValueKind.Array:
-                    value = new ReadOnlyJson(element);
+                    value = new Data(new ReadOnlyJsonStore(element));
                     break;
                 default:
                     throw new NotImplementedException("this should never happen");
@@ -198,7 +215,7 @@ namespace Azure.Data
             }
             throw new NotImplementedException("this should never happen");
         }
-        protected override bool TryGetAtCore(int index, out object item)
+        protected internal override bool TryGetAtCore(int index, out object item)
         {
             item = default;
             JsonElement json = GetJsonElement();
@@ -214,17 +231,17 @@ namespace Azure.Data
             return result;
         }
 
-        protected override bool TryConvertToCore(Type type, out object converted)
+        protected internal override bool TryConvertToCore(Type type, out object converted)
         {
             JsonElement json = GetJsonElement();
-            if (json.ValueKind == JsonValueKind.Array && !IsPrimitiveArray(type))
+            if (json.ValueKind == JsonValueKind.Array && !ModelSchema.IsPrimitiveArray(type))
             {
                 var items = json.GetArrayLength();
-                var array = new ReadOnlyJson[items];
+                var array = new Data[items];
                 int index = 0;
-                foreach(var item in json.EnumerateArray())
+                foreach (var item in json.EnumerateArray())
                 {
-                    array[index++] = new ReadOnlyJson(item); // TODO: this will throw for primitives.
+                    array[index++] = new Data(new ReadOnlyJsonStore(item)); // TODO: this will throw for primitives.
                 }
                 converted = array;
                 return true;
@@ -245,5 +262,10 @@ namespace Azure.Data
             if (_originalData is string) return (string)_originalData;
             else return base.ToString();
         }
+
+        protected internal override bool IsReadOnly => true;
+
+        protected internal override void SetPropertyCore(string propertyName, object propertyValue)
+            => new InvalidOperationException("This object is read-only");
     }
 }

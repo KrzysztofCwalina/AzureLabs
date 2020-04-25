@@ -10,9 +10,7 @@ namespace Azure.Data.Tests
         [Test]
         public void ReadJson()
         {
-            ReadOnlyJson json = new ReadOnlyJson(s_contact1);
-            var first = (string)json["First"];
-
+            Data json = JsonData.Create(s_contact1);
             dynamic contact = json;
 
             Assert.AreEqual("John", contact.First);
@@ -34,7 +32,7 @@ namespace Azure.Data.Tests
         [Test]
         public void Deserialize()
         {
-            dynamic json = new ReadOnlyJson(s_contact1);
+            dynamic json = JsonData.Create(s_contact1);
             var contact = (Contact)json;
 
             Assert.AreEqual("John", contact.First);
@@ -56,13 +54,13 @@ namespace Azure.Data.Tests
         [Test]
         public void Dictionary()
         {
-            ReadOnlyModel contact = new ReadOnlyJson(s_contact1);
+            Data contact = JsonData.Create(s_contact1);
 
             Assert.AreEqual("John", contact["First"]);
             Assert.AreEqual("Smith", contact["Last"]);
             Assert.AreEqual(25, contact["Age"]);
 
-            var address = (ReadOnlyModel)contact["Address"];
+            var address = (Data)contact["Address"];
             Assert.AreEqual(98052, address["Zip"]);
             Assert.AreEqual("Redmond", address["City"]);
 
@@ -75,7 +73,7 @@ namespace Azure.Data.Tests
         public void PrimitiveArray()
         {
             var data = "[5,10,20]";
-            dynamic json = new ReadOnlyJson(data);
+            dynamic json = JsonData.Create(data);
             Assert.AreEqual(5, json[0]);
             Assert.AreEqual(20, json[2]);
 
@@ -89,7 +87,7 @@ namespace Azure.Data.Tests
         {
             var data = $"[[{s_contact1},{s_contact2}]]";
 
-            dynamic json = new ReadOnlyJson(data);
+            dynamic json = JsonData.Create(data);
             dynamic contacts = json[0];
             dynamic contact = contacts[0];
 

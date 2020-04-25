@@ -84,6 +84,22 @@ namespace Azure.Data
 
         protected internal override bool TryGetPropertyCore(string propertyName, out object propertyValue)
             => _properties.TryGetValue(propertyName, out propertyValue);
+
+        public override string ToString()
+        {
+            var sb = new StringBuilder();
+            sb.Append("{");
+            bool first = true;
+            foreach (var propertyName in PropertyNames)
+            {
+                if (first) first = false;
+                else sb.Append(",\n");
+                sb.Append($"\t{propertyName} : {_properties[propertyName]}");
+            }
+            sb.Append("\n}");
+
+            return sb.ToString();
+        }
     }
 
     public class Data : IDynamicMetaObjectProvider, IEnumerable<string>
@@ -136,7 +152,7 @@ namespace Azure.Data
         {
             if (_store.TryGetPropertyCore(propertyName, out object value))
             {
-                Debug.Assert(IsPrimitive(value.GetType()) || value is ReadOnlyModel);
+                Debug.Assert(IsPrimitive(value.GetType()) || value is Data);
                 return value;
             }
             throw new InvalidOperationException("Property not found");
@@ -147,7 +163,7 @@ namespace Azure.Data
             if (_store.TryGetAtCore(index, out object item))
             {
                 if (IsPrimitive(item.GetType())) return item;
-                if (item is ReadOnlyModel) return item;
+                if (item is Data) return item;
                 else throw new Exception("TryGetAt returned invalid object");
             }
             throw new InvalidOperationException("Property not found");
@@ -326,20 +342,6 @@ namespace Azure.Data
         [EditorBrowsable(EditorBrowsableState.Never)]
         public override int GetHashCode() => base.GetHashCode();
 
-        public override string ToString()
-        {
-            var sb = new StringBuilder();
-            sb.Append("{");
-            bool first = true;
-            foreach (var propertyName in this)
-            {
-                if (first) first = false;
-                else sb.Append(",\n");
-                sb.Append($"\t{propertyName} : {this[propertyName]}");
-            }
-            sb.Append("\n}");
-
-            return sb.ToString();
-        }
+        public override string ToString() => _store.ToString();
     }
 }

@@ -25,7 +25,7 @@ public class DynamicJsonBench
 
     static IReadOnlyDictionary<string, object> dict;
 
-    static ReadOnlyJson roj = new ReadOnlyJson(s_demo_payload);
+    static Data roj = JsonData.Create(s_demo_payload);
     static dynamic droj = roj;
 
     static SearchDocument sdoc;
