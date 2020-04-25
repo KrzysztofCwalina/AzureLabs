@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Azure.Data
 {
-    public abstract class ModelSchema
+    public abstract class DataSchema
     {
         public abstract bool TryGetSchema(string propertyName, out PropertySchema schema);
         public abstract IEnumerable<string> PropertyNames { get; }

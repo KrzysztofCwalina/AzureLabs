@@ -59,7 +59,7 @@ namespace Azure.Data.Tests
         public void Dtdl()
         {
             var schema = DtDlParser.ParseFile("Thermostat.dtdl");
-            dynamic model = Model.Create(schema);
+            dynamic model = new Data(schema);
 
             model.setPointTemp = 97.5;
 

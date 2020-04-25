@@ -234,7 +234,7 @@ namespace Azure.Data
         protected internal override bool TryConvertToCore(Type type, out object converted)
         {
             JsonElement json = GetJsonElement();
-            if (json.ValueKind == JsonValueKind.Array && !ModelSchema.IsPrimitiveArray(type))
+            if (json.ValueKind == JsonValueKind.Array && !DataSchema.IsPrimitiveArray(type))
             {
                 var items = json.GetArrayLength();
                 var array = new Data[items];

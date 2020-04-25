@@ -10,7 +10,6 @@ namespace Azure.Data.Tests
         static IEnumerable Models {
             get {
                 yield return new Func<IDynamicMetaObjectProvider>(() => { return new Data(); });
-                yield return new Func<IDynamicMetaObjectProvider>(() => { return Model.Create(); });
             }
         }
 

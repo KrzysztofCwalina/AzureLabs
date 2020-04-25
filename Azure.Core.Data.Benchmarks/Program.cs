@@ -8,9 +8,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
-//[SimpleJob(RuntimeMoniker.Net472, baseline: true)]
 [SimpleJob(RuntimeMoniker.NetCoreApp30)]
-//[RPlotExporter]
 public class DynamicJsonBench
 {
     static string s_demo_payload =
@@ -23,63 +21,82 @@ public class DynamicJsonBench
     "\"Unit\" : \"F\"" +            // user defined
     "}";
 
-    static IReadOnlyDictionary<string, object> dict;
+    static IReadOnlyDictionary<string, object> dictionary;
 
-    static Data roj = JsonData.Create(s_demo_payload);
-    static dynamic droj = roj;
+    static Data jsonData;
+    static dynamic dynamicJsonData;
 
-    static SearchDocument sdoc;
-    static dynamic dsdoc;
+    static SearchDocument searchDocument;
+    static dynamic dynamicSearchDocument;
 
-    static Payload obj;
-    static dynamic dobj;
+    static Payload staticObject;
+    static dynamic dynamicObject;
         
     // TODO: this shoould also test read-only data and with perfect hash
     static Data data;
-    static dynamic ddata = data;
+    static dynamic dynamicData = data;
+
+    static Data perfectHash;
+    static dynamic dynamicPerfectHash;
 
     [GlobalSetup]
     public void Setup()
     {
         var properties = new Dictionary<string, object>(StringComparer.Ordinal);
-        data = new Data();
-        ddata = data;
-        foreach (var property in roj.PropertyNames)
-        {
-            properties.Add(property, roj[property]);
-            data[property] = roj[property];
-        }
-        sdoc = new SearchDocument(properties);
-        dsdoc = sdoc;
-        dict = properties;
 
-        obj = (Payload)droj;
-        dobj = obj;      
+        dictionary = properties;
+
+        jsonData = JsonData.Create(s_demo_payload);
+        dynamicJsonData = jsonData;
+
+        data = new Data();
+        dynamicData = data;
+
+        foreach (var property in jsonData.PropertyNames)
+        {
+            properties.Add(property, jsonData[property]);
+            data[property] = jsonData[property];
+        }
+
+        searchDocument = new SearchDocument(properties);
+        dynamicSearchDocument = searchDocument;
+
+        staticObject = (Payload)dynamicJsonData;
+        dynamicObject = staticObject;
+
+        perfectHash = new Data(new PerfectStore(properties));
+        dynamicPerfectHash = perfectHash;
     }
+
+    [Benchmark]
+    public string IndexerPerfectHash() => (string)perfectHash["Id"];
 
     [Benchmark]
     public string IndexerData() => (string)data["Id"];
 
     [Benchmark]
-    public string IndexerReadOnlyJson() => (string)roj["Id"];
+    public string IndexerJsonData() => (string)jsonData["Id"];
 
     [Benchmark]
-    public string IndexerSearchDocument() => (string)sdoc["Id"];
+    public string IndexerSearchDocument() => (string)searchDocument["Id"];
 
     [Benchmark(Baseline=true)]
-    public string IndexerDictionary() => (string)dict["Id"];
+    public string IndexerDictionary() => (string)dictionary["Id"];
 
     [Benchmark]
-    public string DynamicReadOnlyJson() => droj.Id;
+    public string DynamicPerfectHash() => dynamicPerfectHash.Id;
 
     [Benchmark]
-    public string DynamicData() => ddata.Id;
+    public string DynamicJsonData() => dynamicJsonData.Id;
 
     [Benchmark]
-    public string DynamicSearchDocument() => (string)dsdoc.Id;
+    public string DynamicData() => dynamicData.Id;
 
     [Benchmark]
-    public string DynamicObject() => (string)dobj.Id;
+    public string DynamicSearchDocument() => (string)dynamicSearchDocument.Id;
+
+    [Benchmark]
+    public string DynamicObject() => (string)dynamicObject.Id;
 }
 
 public class Program
@@ -98,7 +115,8 @@ class Payload
 }
 
 // This is manualy created perfect hash dictionary
-class PerfectDictionary : IReadOnlyDictionary<string, object>
+// TODO: schema should move to the store, so that it can compute perfect hash
+class PerfectStore : DataStore
 {
     // CreatedAt 67 => 0
     // Decomissioned 68;
@@ -108,46 +126,36 @@ class PerfectDictionary : IReadOnlyDictionary<string, object>
 
     object[] _values = new object[19];
 
-    public PerfectDictionary(IReadOnlyDictionary<string, object> properties)
+    public PerfectStore(IReadOnlyDictionary<string, object> properties)
     {
-        foreach(var property in properties)
+        foreach (var property in properties)
         {
             _values[GetIndex(property.Key)] = property.Value;
         }
     }
 
-    public object this[string key] {
-        get {
-            return _values[GetIndex(key)];
-        }
-    }
+    protected override bool IsReadOnly => false;
 
     private static int GetIndex(string key) => key[0] - 67;
 
-    public IEnumerable<string> Keys => throw new System.NotImplementedException();
-
-    public IEnumerable<object> Values => throw new System.NotImplementedException();
-
-    public int Count => throw new System.NotImplementedException();
-
-    public bool ContainsKey(string key)
+    protected override bool TryGetPropertyCore(string propertyName, out object propertyValue)
     {
-        throw new System.NotImplementedException();
+        propertyValue = _values[GetIndex(propertyName)];
+        return propertyValue != null;
     }
 
-    public IEnumerator<KeyValuePair<string, object>> GetEnumerator()
-    {
-        throw new System.NotImplementedException();
-    }
+    protected override Data CreateCore(ReadOnlySpan<(string propertyName, object propertyValue)> properties)
+        => throw new NotImplementedException();
 
-    public bool TryGetValue(string key, [MaybeNullWhen(false)] out object value)
-    {
-        value = this[key];
-        return value != null;
-    }
+    protected override void SetPropertyCore(string propertyName, object propertyValue)
+        => throw new NotImplementedException();
 
-    IEnumerator IEnumerable.GetEnumerator()
-    {
-        throw new System.NotImplementedException();
-    }
+    protected override bool TryConvertToCore(Type type, out object converted)
+        => throw new NotImplementedException();
+
+    protected override bool TryGetAtCore(int index, out object item)
+        => throw new NotImplementedException();
+
+    protected override IEnumerable<string> PropertyNames 
+        => throw new NotImplementedException();
 }

@@ -7,16 +7,16 @@ namespace Azure.Data
 {
     public static class DtDlParser
     {
-        public static ModelSchema ParseFile(string filename)
+        public static DataSchema ParseFile(string filename)
         {
             var schemaJson = File.ReadAllText(filename);
-            ModelSchema schema = ParseJson(schemaJson);
+            DataSchema schema = ParseJson(schemaJson);
             return schema;
         }
 
-        public static ModelSchema ParseJson(string schemaJson)
+        public static DataSchema ParseJson(string schemaJson)
         {
-            var schema = new Dictionary<string, ModelSchema.PropertySchema>(StringComparer.Ordinal);
+            var schema = new Dictionary<string, DataSchema.PropertySchema>(StringComparer.Ordinal);
 
             var document = JsonDocument.Parse(schemaJson);
             var root = document.RootElement;
@@ -32,7 +32,7 @@ namespace Azure.Data
                 }
 
                 var clrType = ToClrType(type);
-                schema.Add(name, new ModelSchema.PropertySchema(clrType, name, !writable, isRequired: false));
+                schema.Add(name, new DataSchema.PropertySchema(clrType, name, !writable, isRequired: false));
             }
 
             return new DtdlSchema(schema);
@@ -51,7 +51,7 @@ namespace Azure.Data
             }
         }
 
-        class DtdlSchema : ModelSchema
+        class DtdlSchema : DataSchema
         {
             Dictionary<string, PropertySchema> _properties;
 

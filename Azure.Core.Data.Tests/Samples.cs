@@ -84,7 +84,7 @@ namespace Azure.Data.Tests
         [Test]
         public void S06_ReadOnly()
         {
-            Data data = Model.CreateReadOnly(
+            Data data = Data.CreateReadOnly(
                 ("First", "John"),
                 ("Last", "Smith"),
                 ("Age", 25)

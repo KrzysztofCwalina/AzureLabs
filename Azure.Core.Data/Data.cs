@@ -105,13 +105,13 @@ namespace Azure.Data
     public class Data : IDynamicMetaObjectProvider, IEnumerable<string>
     {
         DataStore _store;
-        ModelSchema _schema;
+        DataSchema _schema;
 
         public Data() => _store = new DictionaryStore();
 
         public Data(DataStore provider) => _store = provider;
 
-        public Data(ModelSchema schema) : this() => _schema = schema;
+        public Data(DataSchema schema) : this() => _schema = schema;
 
         public Data(ReadOnlySpan<(string propertyName, object propertyValue)> properties, bool isReadOnly) {
             var store = new DictionaryStore();
@@ -133,6 +133,12 @@ namespace Azure.Data
             store.Freeze();
             _store = store;
         }
+
+        public static Data Create(params (string propertyName, object propertyValue)[] properties)
+            => new Data(properties, isReadOnly: false);
+
+        public static Data CreateReadOnly(params (string propertyName, object propertyValue)[] properties)
+            => new Data(properties, isReadOnly: true);
 
         public object this[string propertyName] {
             get => GetProperty(propertyName);

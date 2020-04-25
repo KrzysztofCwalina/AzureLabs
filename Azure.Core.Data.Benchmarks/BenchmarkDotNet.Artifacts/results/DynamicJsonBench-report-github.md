@@ -11,14 +11,13 @@ Job=.NET Core 3.0  Runtime=.NET Core 3.0
 ```
 |                Method |      Mean |     Error |    StdDev | Ratio | RatioSD |
 |---------------------- |----------:|----------:|----------:|------:|--------:|
-|    IndexerPerfectHash |  5.468 ns | 0.0537 ns | 0.0502 ns |  0.28 |    0.00 |
-|           IndexerData | 21.945 ns | 0.3147 ns | 0.2628 ns |  1.14 |    0.01 |
-|  IndexerReadOnlyModel | 22.685 ns | 0.0826 ns | 0.0645 ns |  1.18 |    0.01 |
-|   IndexerReadOnlyJson | 84.577 ns | 0.5952 ns | 0.5276 ns |  4.39 |    0.05 |
-| IndexerSearchDocument | 17.757 ns | 0.2696 ns | 0.2390 ns |  0.92 |    0.01 |
-|     IndexerDictionary | 19.276 ns | 0.2170 ns | 0.1924 ns |  1.00 |    0.00 |
-|   DynamicReadOnlyJson | 88.762 ns | 0.5012 ns | 0.4443 ns |  4.61 |    0.05 |
-|           DynamicData | 27.216 ns | 0.2625 ns | 0.2455 ns |  1.41 |    0.02 |
-|  DynamicReadOnlyModel | 30.088 ns | 0.0919 ns | 0.0860 ns |  1.56 |    0.02 |
-| DynamicSearchDocument | 47.399 ns | 0.1690 ns | 0.1320 ns |  2.46 |    0.03 |
-|         DynamicObject |  5.927 ns | 0.0227 ns | 0.0201 ns |  0.31 |    0.00 |
+|    IndexerPerfectHash |  4.786 ns | 0.1467 ns | 0.1372 ns |  0.24 |    0.01 |
+|           IndexerData | 25.857 ns | 0.5211 ns | 0.4351 ns |  1.30 |    0.02 |
+|       IndexerJsonData | 84.516 ns | 0.4519 ns | 0.4227 ns |  4.26 |    0.03 |
+| IndexerSearchDocument | 17.794 ns | 0.0603 ns | 0.0535 ns |  0.90 |    0.01 |
+|     IndexerDictionary | 19.842 ns | 0.1236 ns | 0.1156 ns |  1.00 |    0.00 |
+|    DynamicPerfectHash |  7.021 ns | 0.0486 ns | 0.0406 ns |  0.35 |    0.00 |
+|       DynamicJsonData | 89.379 ns | 0.5695 ns | 0.4446 ns |  4.51 |    0.04 |
+|           DynamicData | 25.672 ns | 0.0282 ns | 0.0220 ns |  1.30 |    0.01 |
+| DynamicSearchDocument | 48.226 ns | 0.1671 ns | 0.1481 ns |  2.43 |    0.01 |
+|         DynamicObject |  6.283 ns | 0.0234 ns | 0.0196 ns |  0.32 |    0.00 |

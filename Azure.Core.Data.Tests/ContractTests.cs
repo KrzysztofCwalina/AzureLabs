@@ -10,7 +10,6 @@ namespace Azure.Data.Tests
         static IEnumerable Models {
             get {
                 yield return new Func<IDynamicMetaObjectProvider>(() => { return new Data(); });
-                yield return new Func<IDynamicMetaObjectProvider>(() => { return Model.Create(); });
             }
         }
 
@@ -28,8 +27,8 @@ namespace Azure.Data.Tests
         [Test]
         public void Cycle()
         {
-            dynamic a = Model.Create();
-            dynamic b = Model.Create();
+            dynamic a = new Data();
+            dynamic b = new Data();
             a.B = b;
             b.A = a;
         }
@@ -43,7 +42,7 @@ namespace Azure.Data.Tests
             a.FooProperty = b;
             b.FooProperty = a;
 
-            dynamic d = Model.Create();
+            dynamic d = new Data();
 
             // TODO: should this throw?
             Assert.Throws<InvalidOperationException>(() => {
@@ -54,14 +53,14 @@ namespace Azure.Data.Tests
         [Test]
         public void PrimitiveArray()
         {
-            dynamic a = Model.Create();
+            dynamic a = new Data();
             a.Items = new int[] { 1, 2, 3 };
         }
 
         [Test]
         public void ComplexArray()
         {
-            dynamic a = Model.Create();
+            dynamic a = new Data();
             a.Items = new Foo[] { new Foo() };
         }
 
