@@ -77,8 +77,7 @@ namespace Azure.Data
                     for (int i = 0; i < pocoProperties.Length; i++) {
                         var pocoProperty = pocoProperties[i];
                         object propertyValue = pocoProperty.GetValue(poco);
-                        var valueType = propertyValue.GetType();
-                        if (propertyValue != null && !valueType.IsDynamicDataPrimitive()) {
+                        if (propertyValue != null && !propertyValue.GetType().IsDynamicDataPrimitive()) {
                             propertyValue = FromPoco(propertyValue, ref allowedRecursionDebth);
                         }
                         string propertyName = pocoProperty.Name;
