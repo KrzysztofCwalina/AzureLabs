@@ -81,13 +81,10 @@ public class DynamicJsonBench
     public string IndexerPerfectHash() => (string)perfectHash["Id"];
 
     [Benchmark]
-    public string IndexerData() => (string)data["Id"];
+    public string IndexerDictionaryStore() => (string)data["Id"];
 
     [Benchmark]
-    public string IndexerJsonData() => (string)jsonData["Id"];
-
-    [Benchmark]
-    public double IndexerJsonNumber() => (double)jsonData["Temperature"];
+    public string IndexerJsonDocument() => (string)jsonData["Id"];
 
     [Benchmark]
     public string IndexerSearchDocument() => (string)searchDocument["Id"];
@@ -95,20 +92,20 @@ public class DynamicJsonBench
     [Benchmark(Baseline = true)]
     public string IndexerDictionary() => (string)dictionary["Id"];
 
-    [Benchmark]
-    public string DynamicPerfectHash() => dynamicPerfectHash.Id;
+    //[Benchmark]
+    //public string DynamicPerfectHash() => dynamicPerfectHash.Id;
 
-    [Benchmark]
-    public string DynamicJsonData() => dynamicJsonData.Id;
+    //[Benchmark]
+    //public string DynamicJsonDocument() => dynamicJsonData.Id;
 
-    [Benchmark]
-    public string DynamicData() => dynamicData.Id;
+    //[Benchmark]
+    //public string DynamicDictionaryStore() => dynamicData.Id;
 
-    [Benchmark]
-    public string DynamicSearchDocument() => (string)dynamicSearchDocument.Id;
+    //[Benchmark]
+    //public string DynamicSearchDocument() => (string)dynamicSearchDocument.Id;
 
-    [Benchmark]
-    public string DynamicObject() => (string)dynamicObject.Id;
+    //[Benchmark]
+    //public string DynamicObject() => (string)dynamicObject.Id;
 }
 
 public class Program

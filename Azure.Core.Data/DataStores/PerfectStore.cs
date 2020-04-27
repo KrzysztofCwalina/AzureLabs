@@ -16,6 +16,13 @@ namespace Azure.Core.Data.DataStores
         }
         public int Size => _size;
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="keys"></param>
+        /// <param name="hash"></param>
+        /// <returns></returns>
+        /// <remarks>If any of the keys are null or empty, the method will return false.</remarks>
         public static bool TryCreate(string[] keys, out PerfectHash hash)
         {
             if (keys == null) throw new ArgumentNullException(nameof(keys));
@@ -23,13 +30,19 @@ namespace Azure.Core.Data.DataStores
             int[] codes = new int[keys.Length];
             for (int i=0; i<codes.Length; i++)
             {
-                codes[i] = ComputeCode(keys[i]);
+                var key = keys[i];
+                if (string.IsNullOrEmpty(key))
+                {
+                    hash = default;
+                    return false;
+                }
+                codes[i] = ComputeCode(key);
             }
 
             if (AreUnique(codes, out int min, out int max))
             {
                 var size = max - min + 1;
-                if (size < keys.Length * 5 && size < 256 * 256)
+                if (size < 256 * 256) // TODO: isn't it too large?
                 {
                     hash = new PerfectHash(min, size);
                     return true;
@@ -38,6 +51,13 @@ namespace Azure.Core.Data.DataStores
 
             hash = default;
             return false;
+        }
+
+        public int ComputeHash(string key)
+        {
+            var code = ComputeCode(key) - _min;
+            if (code < _size) return code;
+            return (code) % _size;
         }
 
         static bool AreUnique(int[] values, out int min, out int max)
@@ -67,17 +87,15 @@ namespace Azure.Core.Data.DataStores
             }
             return true;
         }
-        public int ComputeHash(string key)
-        {
-            var code = ComputeCode(key) - _min;
-            if (code < _size) return code;
-            return (code) % _size;
-        }
 
-        public static int ComputeCode(string key)
+        static int ComputeCode(string key)
         {
             Debug.Assert(key != null && key.Length > 0);
-            return key[0];
+            var first = key[0] - 'A'; // typical range 0-25 (5 bits) Better use PascalCasing!
+            var last = key[key.Length - 1] - '0'; // typical range 0-74 (7 bits) ... and no undescores
+            last <<= 5;
+            var code = (first | last) & 0xFFF; // 0xFFF is 12 (7 + 5 ) bits set
+            return code;
         }
     }
 
@@ -86,7 +104,7 @@ namespace Azure.Core.Data.DataStores
         object[] _values;
         readonly PerfectHash _hash;
 
-        public static DataStore Create(IDictionary<string, object> properties)
+        public static DataStore Create(IReadOnlyDictionary<string, object> properties)
         {
             var names = new string[properties.Count];
             int i = 0;
@@ -100,9 +118,10 @@ namespace Azure.Core.Data.DataStores
                 return new PerfectHashStore(hash, properties);
             }
 
-            return default;
+            // TODO: this should log very time a non-perfect store is created 
+            return new DictionaryStore(properties);
         }
-        private PerfectHashStore(PerfectHash hash, IDictionary<string, object> properties)
+        private PerfectHashStore(PerfectHash hash, IReadOnlyDictionary<string, object> properties)
         {
             _hash = hash;
             _values = new object[_hash.Size];
@@ -113,27 +132,27 @@ namespace Azure.Core.Data.DataStores
             }
         }
 
-        protected internal override bool IsReadOnly => true;
+        protected sealed internal override bool IsReadOnly => true;
 
-        protected internal override bool TryGetValue(string propertyName, out object propertyValue)
+        protected sealed internal override bool TryGetValue(string propertyName, out object propertyValue)
         {
             propertyValue = _values[_hash.ComputeHash(propertyName)];
             return propertyValue != null;
         }
 
-        protected internal override DynamicData CreateDynamicData(ReadOnlySpan<(string propertyName, object propertyValue)> properties)
+        protected sealed internal override DynamicData CreateDynamicData(ReadOnlySpan<(string propertyName, object propertyValue)> properties)
             => throw new NotImplementedException();
 
-        protected internal override void SetValue(string propertyName, object propertyValue)
+        protected sealed internal override void SetValue(string propertyName, object propertyValue)
             => throw new NotImplementedException();
 
-        protected internal override bool TryConvertTo(Type type, out object converted)
+        protected sealed internal override bool TryConvertTo(Type type, out object converted)
             => throw new NotImplementedException();
 
-        protected internal override bool TryGetValueAt(int index, out object item)
+        protected sealed internal override bool TryGetValueAt(int index, out object item)
             => throw new NotImplementedException();
 
-        protected internal override IEnumerable<string> PropertyNames
+        protected sealed internal override IEnumerable<string> PropertyNames
             => throw new NotImplementedException();
     }
 }

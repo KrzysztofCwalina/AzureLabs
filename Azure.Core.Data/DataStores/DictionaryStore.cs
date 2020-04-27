@@ -10,6 +10,17 @@ namespace Azure.Data
         Dictionary<string, object> _properties = new Dictionary<string, object>(StringComparer.Ordinal);
         bool _readonly = false;
 
+        public DictionaryStore() { }
+
+        public DictionaryStore(IReadOnlyDictionary<string, object> properties)
+        {
+            _properties = new Dictionary<string, object>();
+            foreach (var property in properties)
+            {
+                _properties[property.Key] = property.Value;
+            }
+        }
+
         protected internal override IEnumerable<string> PropertyNames => _properties.Keys;
 
         protected internal override bool IsReadOnly => false;
