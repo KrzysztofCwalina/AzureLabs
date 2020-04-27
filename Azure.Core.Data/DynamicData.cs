@@ -10,11 +10,28 @@ using System.Diagnostics;
 
 namespace Azure.Data
 {
+    static class DataType
+    {
+        public static bool IsDynamicDataType(this Type type)
+        {
+            return IsDynamicDataPrimitive(type) || typeof(DynamicData).IsAssignableFrom(type);
+        }
+        // primitives are: Boolean, Byte, SByte, Int16, UInt16, Int32, UInt32, Int64, UInt64, IntPtr, UIntPtr, Char, Double, and Single.
+        // TODO (Pri 1): What about: decimal, DateTime, DateTimeOffset, TimeSpan
+        public static bool IsDynamicDataPrimitive(this Type type)
+        {
+            if (type == typeof(string)) return true;
+            if (type.IsPrimitive) return true;
+            if (type.IsArray && IsDynamicDataPrimitive(type)) return true;
+            return false;
+        }
+    }
+
     // TDODO: is IEnumerable<string> the right thing?
     public class DynamicData : IDynamicMetaObjectProvider, IEnumerable<string>
     {
         DataStore _store;
-        DataSchema _schema; // TTODO: should schema be exposed?
+        DataSchema _schema; // TODO: should schema be exposed?
 
         public DynamicData() => _store = new DictionaryStore();
 
@@ -39,6 +56,60 @@ namespace Azure.Data
             _store = store;
         }
 
+        // TODO (pri 1): if DynamicData could be an array, this could return DynamicData
+        private object ToDataType(object arrayOrObject, Type objectType)
+        {
+            int debth = 100; // TODO: is this a good default? Should it be configurable?
+            if (objectType.IsArray)
+            {
+                object[] array = (object[])arrayOrObject;
+                DynamicData[] result = new DynamicData[array.Length];
+                for (int i = 0; i < array.Length; i++)
+                {
+                    result[i] = FromPoco(array[i], ref debth);
+                }
+                arrayOrObject = result;
+            }
+            else
+            {
+                arrayOrObject = FromPoco(arrayOrObject, ref debth);
+            }
+            return arrayOrObject;
+
+            // TODO: do we want to allow cycles?
+            // TODO: maybe we need plubable converters (both ways)
+            DynamicData FromPoco(object poco, ref int allowedRecursionDebth)
+            {
+                if (--allowedRecursionDebth < 0) throw new InvalidOperationException("Object grath too deep");
+
+                var pocoType = poco.GetType();
+                Debug.Assert(!pocoType.IsDynamicDataPrimitive());
+
+                var result = poco as DynamicData;
+                if (result != null) return result;
+
+                var pocoProperties = pocoType.GetProperties(BindingFlags.Public | BindingFlags.Instance);
+                (string, object)[] dynamicDataProperties = ArrayPool<(string, object)>.Shared.Rent(pocoProperties.Length);
+                try {
+                    for (int i = 0; i < pocoProperties.Length; i++) {
+                        var pocoProperty = pocoProperties[i];
+                        object propertyValue = pocoProperty.GetValue(poco);
+                        var valueType = propertyValue.GetType();
+                        if (propertyValue != null && !valueType.IsDynamicDataPrimitive()) {
+                            propertyValue = FromPoco(propertyValue, ref allowedRecursionDebth);
+                        }
+                        string propertyName = pocoProperty.Name;
+                        dynamicDataProperties[i] = (propertyName, propertyValue);
+                    }
+
+                    return _store.CreateDynamicData(dynamicDataProperties.AsSpan(0, pocoProperties.Length));
+                }
+                finally {
+                    if (dynamicDataProperties != null) ArrayPool<(string, object)>.Shared.Return(dynamicDataProperties);
+                }
+            }
+        }
+
         // TODO: I dont like these create methods. 
         public static DynamicData Create(params (string propertyName, object propertyValue)[] properties)
             => new DynamicData(properties, isReadOnly: false);
@@ -53,11 +124,12 @@ namespace Azure.Data
 
         public IEnumerable<string> PropertyNames => _store.PropertyNames;
 
+        #region used by MetaObject
         private object GetValue(string propertyName)
         {
             if (_store.TryGetValue(propertyName, out object value))
             {
-                Debug.Assert(IsDataType(value.GetType()));
+                Debug.Assert(value.GetType().IsDynamicDataType());
                 return value;
             }
             throw new InvalidOperationException($"Property {propertyName} not found");
@@ -67,7 +139,7 @@ namespace Azure.Data
         {
             if (_store.TryGetValueAt(index, out object item))
             {
-                Debug.Assert(IsDataType(item.GetType()));
+                Debug.Assert(item.GetType().IsDynamicDataType());
                 return item;
             }
             throw new IndexOutOfRangeException();
@@ -98,73 +170,20 @@ namespace Azure.Data
 
             var valueType = propertyValue.GetType();
 
-            if (!IsDataType(valueType))
+            if (!valueType.IsDynamicDataType())
             {
-                propertyValue = ToDataType(propertyValue, valueType);
+                propertyValue =  ToDataType(propertyValue, valueType);
             }
             _store.SetValue(propertyName, propertyValue);
             return propertyValue;
         }
 
-        // TODO (Pri 1): should this be TryGetAs?
         private object ConvertTo(Type type)
         {
-            // TODO: should this be TryGetAs?
             if (_store.TryConvertTo(type, out var result)) return result;
             throw new InvalidCastException($"Cannot cast to {type}.");
         }
-        private object ToDataType(object obj, Type objectType)
-        {
-            int debth = 100; // TODO: is this a good default? Should it be configurable?
-            if (objectType.IsArray)
-            {
-                object[] array = (object[])obj;
-                DynamicData[] result = new DynamicData[array.Length];
-                for (int i = 0; i < array.Length; i++)
-                {
-                    result[i] = FromPoco(array[i], ref debth);
-                }
-                obj = result;
-            }
-            else
-            {
-                obj = FromPoco(obj, ref debth);
-            }
-            return obj;
-        }
-        // TODO: do we want to allow cycles?
-        // TODO: maybe we need plubable converters (both ways)
-        private DynamicData FromPoco(object poco, ref int allowedRecursionDebth)
-        {
-            if (--allowedRecursionDebth < 0) throw new InvalidOperationException("Object grath too deep");
-
-            var pocoType = poco.GetType();
-            Debug.Assert(!IsPrimitive(pocoType));
-            Debug.Assert(!IsPrimitiveArray(pocoType));
-
-            var result = poco as DynamicData;
-            if (result != null) return result;
-
-            var pocoProperties = pocoType.GetProperties(BindingFlags.Public | BindingFlags.Instance);
-            (string, object)[] dynamicDataProperties = ArrayPool<(string, object)>.Shared.Rent(pocoProperties.Length);
-            try
-            {
-                for (int i = 0; i < pocoProperties.Length; i++)
-                {
-                    var pocoProperty = pocoProperties[i];
-                    string propertyName = pocoProperty.Name;
-                    object propertyValue = pocoProperty.GetValue(poco);
-                    if (propertyValue != null && !IsPrimitive(propertyValue.GetType())) propertyValue = FromPoco(propertyValue, ref allowedRecursionDebth);
-                    dynamicDataProperties[i] = (propertyName, propertyValue);
-                }
-
-                return _store.CreateDynamicData(dynamicDataProperties.AsSpan(0, pocoProperties.Length));
-            }
-            finally
-            {
-                if (dynamicDataProperties != null) ArrayPool<(string, object)>.Shared.Return(dynamicDataProperties);
-            }
-        }
+        #endregion
 
         DynamicMetaObject IDynamicMetaObjectProvider.GetMetaObject(Expression parameter) => new MetaObject(parameter, this);
 
@@ -203,7 +222,6 @@ namespace Azure.Data
             // TODO: this needs to deal with primitives, natural concersions, etc.
             public override DynamicMetaObject BindConvert(ConvertBinder binder)
             {
-                var sourceType = LimitType;
                 var sourceInstance = Expression.Convert(Expression, LimitType);
                 var destinationType = binder.Type;
                 var destinationTypeExpression = Expression.Constant(destinationType);
@@ -228,23 +246,6 @@ namespace Azure.Data
                 return setProperty;
             }
         }
-
-        // primitives are: Boolean, Byte, SByte, Int16, UInt16, Int32, UInt32, Int64, UInt64, IntPtr, UIntPtr, Char, Double, and Single.
-        // What about: decimal, DateTime, DateTimeOffset, TimeSpan
-        // TODO: should these be combined? 
-        private static bool IsPrimitive(Type type)
-        {
-            if (type == typeof(string)) return true;
-            if (type.IsPrimitive) return true;
-            return false;
-        }
-        private static bool IsPrimitiveArray(Type type)
-        {
-            if (type.IsArray && IsPrimitive(type.GetElementType())) return true;
-            return false;
-        }
-        private static bool IsDataType(Type type)
-            => IsPrimitive(type) || IsPrimitiveArray(type) || typeof(DynamicData).IsAssignableFrom(type);
     
         IEnumerator<string> IEnumerable<string>.GetEnumerator() => PropertyNames.GetEnumerator();
         IEnumerator IEnumerable.GetEnumerator() => PropertyNames.GetEnumerator();
