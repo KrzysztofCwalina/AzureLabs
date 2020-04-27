@@ -59,20 +59,19 @@ namespace Azure.Data.Tests
             });
         }
 
-        // TODO (pri 1): fix these
-        //[Test]
-        //public void PrimitiveArray()
-        //{
-        //    dynamic a = new DynamicData();
-        //    a.Items = new int[] { 1, 2, 3 };
-        //}
+        [Test]
+        public void PrimitiveArray()
+        {
+            dynamic a = new DynamicData();
+            a.Items = new int[] { 1, 2, 3 };
+        }
 
-        //[Test]
-        //public void ComplexArray()
-        //{
-        //    dynamic a = new DynamicData();
-        //    a.Items = new Foo[] { new Foo() };
-        //}
+        [Test]
+        public void ComplexArray()
+        {
+            dynamic a = new DynamicData();
+            a.Items = new Foo[] { new Foo() };
+        }
 
         class Foo
         {
