@@ -10,35 +10,6 @@ using System.Diagnostics;
 
 namespace Azure.Data
 {
-    public abstract class DataConverter
-    {
-        public abstract Type ForType { get; }
-        public abstract DynamicData ConvertToDataType(object obj);
-        public abstract object ConverFromDataType(string text);
-    }
-
-    public class DateTimeConverter : DataConverter
-    {
-        public override Type ForType => typeof(DateTime);
-
-        public override object ConverFromDataType(string text)
-        {
-            if (DateTime.TryParse(text, out var dt))
-            {
-                return dt;
-            }
-            throw new InvalidOperationException();
-        }
-
-        public override DynamicData ConvertToDataType(object obj)
-        {
-            var dt = (DateTime)obj; 
-            var data = new DynamicData(dt.ToString("O"));
-            data.Converters.Add(typeof(DateTime), this);
-            return data;
-        }
-    }
-
     // TDODO: is IEnumerable<string> the right thing?
     public class DynamicData : IDynamicMetaObjectProvider, IEnumerable<string>
     {
@@ -137,6 +108,7 @@ namespace Azure.Data
         }
 
         public IEnumerable<string> PropertyNames => _store.PropertyNames;
+        public string Value => _value;
 
         #region used by MetaObject
         private object GetValue(string propertyName)
@@ -196,7 +168,7 @@ namespace Azure.Data
         {
             if(Converters.TryGetValue(type, out var converter))
             {
-                return converter.ConverFromDataType(_value);
+                return converter.ConverFromDataType(this);
             }
             if (_store.TryConvertTo(type, out var result)) return result;
             throw new InvalidCastException($"Cannot cast to {type}.");
@@ -274,6 +246,6 @@ namespace Azure.Data
         [EditorBrowsable(EditorBrowsableState.Never)]
         public override int GetHashCode() => base.GetHashCode();
 
-        public override string ToString() => _store.ToString();
+        public override string ToString() => _store!=null?_store.ToString():_value;
     }
 }
