@@ -1,5 +1,6 @@
 using NUnit.Framework;
 using System;
+using System.ComponentModel;
 
 namespace Azure.Data.Tests
 {
@@ -47,7 +48,21 @@ namespace Azure.Data.Tests
         }
 
         [Test]
-        public void S04_AnonymousValue()
+        public void S04_Converters()
+        {
+            DynamicData data = new DynamicData();
+            data.Converters.Add(typeof(DateTime), new DateTimeConverter());
+
+            dynamic ddata = data;
+            var time = new DateTime(2020, 4, 28, 10, 12, 50, 40); ;
+
+            ddata.Time = time;
+            var deserialized = (DateTime)ddata.Time;
+            Assert.AreEqual(time, deserialized);
+        }
+
+        [Test]
+        public void S05_AnonymousValue()
         {
             dynamic contact = new DynamicData();
             contact.Address = new { Zip = 98052, City = "Redmond" };
@@ -65,7 +80,7 @@ namespace Azure.Data.Tests
         }
 
         //[Test]
-        //public void S05_ComplexArray()
+        //public void S06_ComplexArray()
         //{
         //    var data = "[{\"Foo\":10 },{\"Foo\":20}]";
         //    dynamic array = Model.CreateFromJson(data);
@@ -82,9 +97,10 @@ namespace Azure.Data.Tests
         //}
 
         [Test]
-        public void S06_ReadOnly()
+        public void S07_ReadOnly()
         {
-            DynamicData data = DynamicData.CreateReadOnly(
+            DynamicData data = new DynamicData(
+                isReadOnly : true,
                 ("First", "John"),
                 ("Last", "Smith"),
                 ("Age", 25)
@@ -102,7 +118,7 @@ namespace Azure.Data.Tests
         }
 
         [Test]
-        public void S07_Indexer()
+        public void S08_Indexer()
         {
             var data = new DynamicData();
             data["First"] = "John";

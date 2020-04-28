@@ -2,7 +2,7 @@
 
 namespace Azure.Data
 {
-    static class DataType
+    static class DataTypeExtensions
     {
         public static bool IsDynamicDataType(this Type type)
         {

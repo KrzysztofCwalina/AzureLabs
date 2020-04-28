@@ -10,25 +10,60 @@ using System.Diagnostics;
 
 namespace Azure.Data
 {
+    public abstract class DataConverter
+    {
+        public abstract Type ForType { get; }
+        public abstract DynamicData ConvertToDataType(object obj);
+        public abstract object ConverFromDataType(string text);
+    }
+
+    public class DateTimeConverter : DataConverter
+    {
+        public override Type ForType => typeof(DateTime);
+
+        public override object ConverFromDataType(string text)
+        {
+            if (DateTime.TryParse(text, out var dt))
+            {
+                return dt;
+            }
+            throw new InvalidOperationException();
+        }
+
+        public override DynamicData ConvertToDataType(object obj)
+        {
+            var dt = (DateTime)obj; 
+            var data = new DynamicData(dt.ToString("O"));
+            data.Converters.Add(typeof(DateTime), this);
+            return data;
+        }
+    }
+
     // TDODO: is IEnumerable<string> the right thing?
     public class DynamicData : IDynamicMetaObjectProvider, IEnumerable<string>
     {
-        DataStore _store;
         DataSchema _schema; // TODO: should schema be exposed?
+        DataStore _store;
+        string _value;
+        public IDictionary<Type, DataConverter> Converters = new Dictionary<Type, DataConverter>();
 
         public DynamicData() => _store = new DictionaryStore();
+
+        public DynamicData(string text) => _value = text;
 
         public DynamicData(DataStore store) => _store = store;
 
         public DynamicData(DataSchema schema) : this() => _schema = schema;
 
-        public DynamicData(ReadOnlySpan<(string propertyName, object propertyValue)> properties, bool isReadOnly) {
+        public DynamicData(bool isReadOnly, params (string propertyName, object propertyValue)[] properties)
+        {
             var store = new DictionaryStore();
-            for (int i = 0; i < properties.Length; i++){
+            for (int i = 0; i < properties.Length; i++)
+            {
                 var property = properties[i];
                 store.SetValue(property.propertyName, property.propertyValue);
             }
-            if (isReadOnly) store.Freeze(); 
+            if (isReadOnly) store.Freeze();
             _store = store;
         }
 
@@ -42,6 +77,11 @@ namespace Azure.Data
         // TODO (pri 1): if DynamicData could be an array, this could return DynamicData
         private object ToDataType(object arrayOrObject, Type objectType)
         {
+            if (Converters.TryGetValue(objectType, out var converter))
+            {
+                return converter.ConvertToDataType(arrayOrObject);
+            }
+
             int debth = 100; // TODO: is this a good default? Should it be configurable?
             if (objectType.IsArray)
             {
@@ -59,11 +99,10 @@ namespace Azure.Data
             }
             return arrayOrObject;
 
-            // TODO: do we want to allow cycles?
             // TODO: maybe we need plubable converters (both ways)
             DynamicData FromPoco(object poco, ref int allowedRecursionDebth)
             {
-                if (--allowedRecursionDebth < 0) throw new InvalidOperationException("Object grath too deep");
+                if (--allowedRecursionDebth < 0) throw new InvalidOperationException("Object grath contains a cycle or is too deep");
 
                 var pocoType = poco.GetType();
                 Debug.Assert(!pocoType.IsDynamicDataPrimitive());
@@ -91,13 +130,6 @@ namespace Azure.Data
                 }
             }
         }
-
-        // TODO: I dont like these create methods. 
-        public static DynamicData Create(params (string propertyName, object propertyValue)[] properties)
-            => new DynamicData(properties, isReadOnly: false);
-
-        public static DynamicData CreateReadOnly(params (string propertyName, object propertyValue)[] properties)
-            => new DynamicData(properties, isReadOnly: true);
 
         public object this[string propertyName] {
             get => GetValue(propertyName);
@@ -162,6 +194,10 @@ namespace Azure.Data
 
         private object ConvertTo(Type type)
         {
+            if(Converters.TryGetValue(type, out var converter))
+            {
+                return converter.ConverFromDataType(_value);
+            }
             if (_store.TryConvertTo(type, out var result)) return result;
             throw new InvalidCastException($"Cannot cast to {type}.");
         }
