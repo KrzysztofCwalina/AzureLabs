@@ -50,8 +50,7 @@ namespace Azure.Data.Tests
         [Test]
         public void S04_Converters()
         {
-            DynamicData data = new DynamicData();
-            data.Converters.Add(typeof(DateTime), new DateTimeConverter());
+            DynamicData data = new DynamicData().WithConverters(DataConverter.Common);
 
             dynamic ddata = data;
             var time = new DateTime(2020, 4, 28, 10, 12, 50, 40); ;

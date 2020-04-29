@@ -23,7 +23,7 @@ namespace Azure.Data
         object _data;
         DataType _type;
         DataSchema _schema;
-        public IDictionary<Type, DataConverter> Converters = new Dictionary<Type, DataConverter>();
+        IDictionary<Type, DataConverter> _converters = new Dictionary<Type, DataConverter>();
 
         public DynamicData() => _type = DataType.Null;
 
@@ -59,7 +59,7 @@ namespace Azure.Data
             _type = DataType.Properties;
         }
 
-        // TODO: I dont like this ctor. Maybe we ask users to create store.
+        //// TODO: I dont like this ctor. Maybe we ask users to create store.
         public DynamicData(bool isReadOnly, params (string propertyName, object propertyValue)[] properties)
         {
             var store = new DictionaryStore();
@@ -71,61 +71,6 @@ namespace Azure.Data
             if (isReadOnly) store.Freeze();
             _data = store;
             _type = DataType.Properties;
-        }
-
-        private DynamicData ToDataType(object arrayOrObject, Type objectType)
-        {
-            int debth = 100; // TODO: is this a good default? Should it be configurable?
-
-            if (Converters.TryGetValue(objectType, out var converter))
-            {
-                return converter.ConvertToDataType(arrayOrObject);
-            }
-
-            if (objectType.IsArray)
-            {
-                object[] array = (object[])arrayOrObject;
-                DynamicData[] result = new DynamicData[array.Length];
-                for (int i = 0; i < array.Length; i++)
-                {
-                    result[i] = FromPoco(array[i], ref debth);
-                }
-                return new DynamicData(result);
-            }
-  
-            return FromPoco(arrayOrObject, ref debth);
-
-            DynamicData FromPoco(object poco, ref int allowedRecursionDebth)
-            {
-                if (--allowedRecursionDebth < 0) throw new InvalidOperationException("Object grath contains a cycle or is too deep");
-
-                var pocoType = poco.GetType();
-                Debug.Assert(!pocoType.IsDynamicDataPrimitive());
-
-                var result = poco as DynamicData;
-                if (result != null) return result;
-
-                var pocoProperties = pocoType.GetProperties(BindingFlags.Public | BindingFlags.Instance);
-                (string, object)[] dynamicDataProperties = ArrayPool<(string, object)>.Shared.Rent(pocoProperties.Length);
-                try {
-                    for (int i = 0; i < pocoProperties.Length; i++) {
-                        var pocoProperty = pocoProperties[i];
-                        object propertyValue = pocoProperty.GetValue(poco);
-                        if (propertyValue != null && !propertyValue.GetType().IsDynamicDataPrimitive()) {
-                            propertyValue = FromPoco(propertyValue, ref allowedRecursionDebth);
-                        }
-                        string propertyName = pocoProperty.Name;
-                        dynamicDataProperties[i] = (propertyName, propertyValue);
-                    }
-
-                    var store = _data as PropertyStore;
-                    if (store == null) throw new NotImplementedException(); // TODO: implement
-                    return store.CreateDynamicData(dynamicDataProperties.AsSpan(0, pocoProperties.Length));
-                }
-                finally {
-                    if (dynamicDataProperties != null) ArrayPool<(string, object)>.Shared.Return(dynamicDataProperties);
-                }
-            }
         }
 
         public object this[string propertyName] {
@@ -141,6 +86,22 @@ namespace Azure.Data
             }
         }
 
+        // TODO: I don't like how the converters are handled. I think it needs to be Add/Remove collection with preinitialized converters
+        public DynamicData WithConverters(ReadOnlyMemory<DataConverter> converters)
+        {
+            var cs = converters.Span;
+            for(int i=0; i<cs.Length; i++)
+            {
+                var c = cs[i];
+                _converters.Add(c.ForType, c);
+            }
+            return this;
+        }
+        public DynamicData WithConverter(DataConverter converter)
+        {
+            _converters.Add(converter.ForType, converter);
+            return this;
+        }
         #region used by MetaObject
         private object GetValue(string propertyName)
         {
@@ -158,21 +119,27 @@ namespace Azure.Data
 
         private object GetValueAt(int index)
         {
+            var array = _data as object[];
+            if (array != null) return array[index];
+
             var store = _data as PropertyStore;
 
-            // TODO: implement
-            if (store == null) throw new NotImplementedException();
-
-            if (store.TryGetValueAt(index, out object item))
+            if (store != null)
             {
-                Debug.Assert(item.GetType().IsDynamicDataType());
-                return item;
+                if (store.TryGetValueAt(index, out object item))
+                {
+                    Debug.Assert(item.GetType().IsDynamicDataType());
+                    return item;
+                }
+                else throw new IndexOutOfRangeException();
             }
-            throw new IndexOutOfRangeException();
+            throw new InvalidOperationException("The data is not an array");
         }
 
         private object SetValue(string propertyName, object propertyValue)
         {
+            var valueType = propertyValue.GetType();
+
             if (_schema != null)
             {
                 if (!_schema.TryGetPropertyType(propertyName, out var propertySchema))
@@ -184,7 +151,7 @@ namespace Azure.Data
                     throw new InvalidOperationException($"Property {propertyName} is read-only");
                 }
                 // TODO (pri 1): this type check needs to be done after type conversion
-                if (!propertySchema.PropertyType.IsAssignableFrom(propertyValue.GetType()))
+                if (!propertySchema.PropertyType.IsAssignableFrom(valueType))
                 {
                     throw new InvalidOperationException($"Property {propertyName} is of type {propertySchema.PropertyType}");
                 }
@@ -197,12 +164,12 @@ namespace Azure.Data
                 _data = store;
                 _type = DataType.Properties;
             }
+
+            // TODO: is this really property of the store, schema, or DynamicData?
             if (store.IsReadOnly)
             {
                 throw new InvalidOperationException($"The data is read-only");
             }
-
-            var valueType = propertyValue.GetType();
 
             if (!valueType.IsDynamicDataType())
             {
@@ -214,7 +181,7 @@ namespace Azure.Data
 
         private object ConvertTo(Type type)
         {
-            if(Converters.TryGetValue(type, out var converter))
+            if(_converters.TryGetValue(type, out var converter))
             {
                 return converter.ConverFromDataType(this);
             }
@@ -286,7 +253,66 @@ namespace Azure.Data
                 return setProperty;
             }
         }
-    
+
+        private DynamicData ToDataType(object arrayOrObject, Type objectType)
+        {
+            int debth = 100; // TODO: is this a good default? Should it be configurable?
+
+            if (_converters.TryGetValue(objectType, out var converter))
+            {
+                return converter.ConvertToDataType(arrayOrObject);
+            }
+
+            if (objectType.IsArray)
+            {
+                object[] array = (object[])arrayOrObject;
+                DynamicData[] result = new DynamicData[array.Length];
+                for (int i = 0; i < array.Length; i++)
+                {
+                    result[i] = FromPoco(array[i], ref debth);
+                }
+                return new DynamicData(result);
+            }
+
+            return FromPoco(arrayOrObject, ref debth);
+
+            DynamicData FromPoco(object poco, ref int allowedRecursionDebth)
+            {
+                if (--allowedRecursionDebth < 0) throw new InvalidOperationException("Object grath contains a cycle or is too deep");
+
+                var pocoType = poco.GetType();
+                Debug.Assert(!pocoType.IsDynamicDataPrimitive());
+
+                var result = poco as DynamicData;
+                if (result != null) return result;
+
+                var pocoProperties = pocoType.GetProperties(BindingFlags.Public | BindingFlags.Instance);
+                (string, object)[] dynamicDataProperties = ArrayPool<(string, object)>.Shared.Rent(pocoProperties.Length);
+                try
+                {
+                    for (int i = 0; i < pocoProperties.Length; i++)
+                    {
+                        var pocoProperty = pocoProperties[i];
+                        object propertyValue = pocoProperty.GetValue(poco);
+                        if (propertyValue != null && !propertyValue.GetType().IsDynamicDataPrimitive())
+                        {
+                            propertyValue = FromPoco(propertyValue, ref allowedRecursionDebth);
+                        }
+                        string propertyName = pocoProperty.Name;
+                        dynamicDataProperties[i] = (propertyName, propertyValue);
+                    }
+
+                    var store = _data as PropertyStore;
+                    if (store == null) throw new NotImplementedException(); // TODO: implement
+                    return store.CreateDynamicData(dynamicDataProperties.AsSpan(0, pocoProperties.Length));
+                }
+                finally
+                {
+                    if (dynamicDataProperties != null) ArrayPool<(string, object)>.Shared.Return(dynamicDataProperties);
+                }
+            }
+        }
+
         IEnumerator<string> IEnumerable<string>.GetEnumerator() => PropertyNames.GetEnumerator();
         IEnumerator IEnumerable.GetEnumerator() => PropertyNames.GetEnumerator();
 
