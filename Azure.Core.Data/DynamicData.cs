@@ -129,6 +129,22 @@ namespace Azure.Data
         {
             var propertyValueType = propertyValue.GetType();
 
+            if (_schema != null)
+            {
+                if (!_schema.TryGetPropertyType(propertyName, out var propertySchema))
+                {
+                    throw new InvalidOperationException($"Property {propertyName} does not exist");
+                }
+                if (propertySchema.IsReadOnly)
+                {
+                    throw new InvalidOperationException($"Property {propertyName} is read-only");
+                }
+                if (!propertySchema.PropertyType.IsAssignableFrom(propertyValueType))
+                {
+                    throw new InvalidOperationException($"Property {propertyName} is of type {propertySchema.PropertyType}");
+                }
+            }
+
             var store = _data as PropertyStore;
             if (store == null && _type == DataType.Null)
             {
@@ -146,22 +162,6 @@ namespace Azure.Data
             {
                 propertyValue = ToDataType(propertyValue, propertyValueType);
                 propertyValueType = typeof(DynamicData);
-            }
-
-            if (_schema != null)
-            {
-                if (!_schema.TryGetPropertyType(propertyName, out var propertySchema))
-                {
-                    throw new InvalidOperationException($"Property {propertyName} does not exist");
-                }
-                if (propertySchema.IsReadOnly)
-                {
-                    throw new InvalidOperationException($"Property {propertyName} is read-only");
-                }
-                if (!propertySchema.PropertyType.IsAssignableFrom(propertyValueType))
-                {
-                    throw new InvalidOperationException($"Property {propertyName} is of type {propertySchema.PropertyType}");
-                }
             }
 
             store.SetValue(propertyName, propertyValue);
