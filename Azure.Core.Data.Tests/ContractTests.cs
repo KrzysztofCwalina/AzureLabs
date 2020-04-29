@@ -13,7 +13,7 @@ namespace Azure.Data.Tests
             var dictionary = new Dictionary<string, object>();
             dictionary.Add("a", 1);
 
-            DataStore store;
+            PropertyStore store;
 
             store = PerfectHashStore.Create(dictionary);
             Assert.IsNotNull(store);

@@ -99,12 +99,12 @@ namespace Azure.Core.Data.DataStores
         }
     }
 
-    public class PerfectHashStore : DataStore
+    public class PerfectHashStore : PropertyStore
     {
         object[] _values;
         readonly PerfectHash _hash;
 
-        public static DataStore Create(IReadOnlyDictionary<string, object> properties)
+        public static PropertyStore Create(IReadOnlyDictionary<string, object> properties)
         {
             var names = new string[properties.Count];
             int i = 0;

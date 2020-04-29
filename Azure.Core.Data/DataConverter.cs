@@ -15,7 +15,7 @@ namespace Azure.Data
 
         public override object ConverFromDataType(DynamicData data)
         {
-            if (DateTime.TryParse(data.Value, out var dt))
+            if (DateTime.TryParse(data.ToString(), out var dt))
             {
                 return dt;
             }

@@ -5,7 +5,7 @@ using System.Reflection;
 
 namespace Azure.Data
 {
-    class DictionaryStore : DataStore
+    class DictionaryStore : PropertyStore
     {
         Dictionary<string, object> _properties = new Dictionary<string, object>(StringComparer.Ordinal);
         bool _readonly = false;

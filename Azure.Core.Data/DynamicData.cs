@@ -10,22 +10,38 @@ using System.Diagnostics;
 
 namespace Azure.Data
 {
-    // TDODO: is IEnumerable<string> the right thing?
+    enum DataType {
+        Null,
+        Properties,
+        String,         
+    }
+
+    // TDODO: this should implement IDictionary<string, object>
     public class DynamicData : IDynamicMetaObjectProvider, IEnumerable<string>
     {
-        DataSchema _schema; // TODO: should schema be exposed?
-        DataStore _store;
-        string _value;
+        DataType _type;
+        object _data;
+        DataSchema _schema; // TODO: should schema be exposed? Should it be part of the Store?
         public IDictionary<Type, DataConverter> Converters = new Dictionary<Type, DataConverter>();
 
-        public DynamicData() => _store = new DictionaryStore();
+        public DynamicData() => _type = DataType.Null;
 
-        public DynamicData(string text) => _value = text;
+        public DynamicData(string text)
+        {
+            _data = text;
+            _type = DataType.String;
+        }
 
-        public DynamicData(DataStore store) => _store = store;
+        public DynamicData(PropertyStore store)
+        {
+            _data = store;
+            _type = DataType.Properties;
+        }
 
+        // TODO: I don't like this ctor
         public DynamicData(DataSchema schema) : this() => _schema = schema;
 
+        // TODO: I dont like this ctor. Maybe we ask users to create store.
         public DynamicData(bool isReadOnly, params (string propertyName, object propertyValue)[] properties)
         {
             var store = new DictionaryStore();
@@ -35,14 +51,16 @@ namespace Azure.Data
                 store.SetValue(property.propertyName, property.propertyValue);
             }
             if (isReadOnly) store.Freeze();
-            _store = store;
+            _data = store;
+            _type = DataType.Properties;
         }
 
         public DynamicData(IReadOnlyDictionary<string, object> properties)
         {
             var store = new DictionaryStore(properties);
             store.Freeze();
-            _store = store;
+            _data = store;
+            _type = DataType.Properties;
         }
 
         // TODO (pri 1): if DynamicData could be an array, this could return DynamicData
@@ -94,7 +112,9 @@ namespace Azure.Data
                         dynamicDataProperties[i] = (propertyName, propertyValue);
                     }
 
-                    return _store.CreateDynamicData(dynamicDataProperties.AsSpan(0, pocoProperties.Length));
+                    var store = _data as PropertyStore;
+                    if (store == null) throw new NotImplementedException(); // TODO: implement
+                    return store.CreateDynamicData(dynamicDataProperties.AsSpan(0, pocoProperties.Length));
                 }
                 finally {
                     if (dynamicDataProperties != null) ArrayPool<(string, object)>.Shared.Return(dynamicDataProperties);
@@ -107,13 +127,22 @@ namespace Azure.Data
             set => SetValue(propertyName, value);
         }
 
-        public IEnumerable<string> PropertyNames => _store.PropertyNames;
-        public string Value => _value;
+        public IEnumerable<string> PropertyNames {
+            get {
+                var store = _data as PropertyStore;
+                if (store != null) return store.PropertyNames;
+                return Array.Empty<string>();
+            }
+        }
 
         #region used by MetaObject
         private object GetValue(string propertyName)
         {
-            if (_store.TryGetValue(propertyName, out object value))
+            var store = _data as PropertyStore;
+
+            if (store == null) return _data;
+
+            if (store.TryGetValue(propertyName, out object value))
             {
                 Debug.Assert(value.GetType().IsDynamicDataType());
                 return value;
@@ -123,7 +152,12 @@ namespace Azure.Data
 
         private object GetValueAt(int index)
         {
-            if (_store.TryGetValueAt(index, out object item))
+            var store = _data as PropertyStore;
+
+            // TODO: implement
+            if (store == null) throw new NotImplementedException();
+
+            if (store.TryGetValueAt(index, out object item))
             {
                 Debug.Assert(item.GetType().IsDynamicDataType());
                 return item;
@@ -133,7 +167,14 @@ namespace Azure.Data
 
         private object SetValue(string propertyName, object propertyValue)
         {
-            if (_store.IsReadOnly)
+            var store = _data as PropertyStore;
+            if(store == null && _type == DataType.Null)
+            {
+                store = new DictionaryStore();
+                _data = store;
+                _type = DataType.Properties;
+            }
+            if (store.IsReadOnly)
             {
                 throw new InvalidOperationException($"The data is read-only");
             }
@@ -160,7 +201,7 @@ namespace Azure.Data
             {
                 propertyValue =  ToDataType(propertyValue, valueType);
             }
-            _store.SetValue(propertyName, propertyValue);
+            store.SetValue(propertyName, propertyValue);
             return propertyValue;
         }
 
@@ -170,7 +211,9 @@ namespace Azure.Data
             {
                 return converter.ConverFromDataType(this);
             }
-            if (_store.TryConvertTo(type, out var result)) return result;
+
+            var store = _data as PropertyStore;
+            if (store.TryConvertTo(type, out var result)) return result;
             throw new InvalidCastException($"Cannot cast to {type}.");
         }
         #endregion
@@ -246,6 +289,6 @@ namespace Azure.Data
         [EditorBrowsable(EditorBrowsableState.Never)]
         public override int GetHashCode() => base.GetHashCode();
 
-        public override string ToString() => _store!=null?_store.ToString():_value;
+        public override string ToString() => _data.ToString();
     }
 }

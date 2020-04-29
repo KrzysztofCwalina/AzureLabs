@@ -14,7 +14,7 @@ namespace Azure.Data
             var store = new JsonDocumentStore(s_demo_payload);
             return new DynamicData(store);
         }
-        public static DataStore CreateStore(string s_demo_payload)
+        public static PropertyStore CreateStore(string s_demo_payload)
         {
             var store = new JsonDocumentStore(s_demo_payload);
             return store;

@@ -3,7 +3,7 @@ using System;
 
 namespace Azure.Data
 {
-    public abstract class DataStore 
+    public abstract class PropertyStore 
     {
         /// <summary>
         /// 

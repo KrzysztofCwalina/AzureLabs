@@ -125,7 +125,7 @@ class Payload
 
 // This is manualy created perfect hash dictionary
 // TODO: schema should move to the store, so that it can compute perfect hash
-class PerfectStore : DataStore
+class PerfectStore : PropertyStore
 {
     // CreatedAt 67 => 0
     // Decomissioned 68;

@@ -7,7 +7,7 @@ using System.Text;
 
 namespace Azure.Data
 {
-    internal class JsonDocumentStore : DataStore
+    internal class JsonDocumentStore : PropertyStore
     {
         private bool _deserialized;
         private object _originalData; // either string or stream
