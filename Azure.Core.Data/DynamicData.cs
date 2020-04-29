@@ -45,6 +45,12 @@ namespace Azure.Data
             _type = DataType.Properties;
         }
 
+        public DynamicData(DynamicData[] array)
+        {
+            _data = array;
+            _type = DataType.Array;
+        }
+
         public DynamicData(IReadOnlyDictionary<string, object> properties)
         {
             var store = new DictionaryStore(properties);
@@ -67,15 +73,15 @@ namespace Azure.Data
             _type = DataType.Properties;
         }
 
-        // TODO (pri 1): if DynamicData could be an array, this could return DynamicData
-        private object ToDataType(object arrayOrObject, Type objectType)
+        private DynamicData ToDataType(object arrayOrObject, Type objectType)
         {
+            int debth = 100; // TODO: is this a good default? Should it be configurable?
+
             if (Converters.TryGetValue(objectType, out var converter))
             {
                 return converter.ConvertToDataType(arrayOrObject);
             }
 
-            int debth = 100; // TODO: is this a good default? Should it be configurable?
             if (objectType.IsArray)
             {
                 object[] array = (object[])arrayOrObject;
@@ -84,15 +90,11 @@ namespace Azure.Data
                 {
                     result[i] = FromPoco(array[i], ref debth);
                 }
-                arrayOrObject = result;
+                return new DynamicData(result);
             }
-            else
-            {
-                arrayOrObject = FromPoco(arrayOrObject, ref debth);
-            }
-            return arrayOrObject;
+  
+            return FromPoco(arrayOrObject, ref debth);
 
-            // TODO: maybe we need plubable converters (both ways)
             DynamicData FromPoco(object poco, ref int allowedRecursionDebth)
             {
                 if (--allowedRecursionDebth < 0) throw new InvalidOperationException("Object grath contains a cycle or is too deep");
