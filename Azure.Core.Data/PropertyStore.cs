@@ -3,7 +3,7 @@ using System;
 
 namespace Azure.Data
 {
-    public abstract class PropertyStore 
+    public abstract class PropertyStore
     {
         /// <summary>
         /// 
@@ -43,8 +43,8 @@ namespace Azure.Data
         // TODO: should this be non-virtual? Why do we need many implementations? Should this return DynamicData?
         internal protected abstract bool TryConvertTo(Type type, out object converted);
 
-        internal protected abstract IEnumerable<string> PropertyNames { get; }
-
         internal protected abstract bool IsReadOnly { get; }
+
+        internal protected abstract IEnumerable<string> PropertyNames { get; }
     }
 }

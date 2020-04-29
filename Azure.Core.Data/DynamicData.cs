@@ -12,19 +12,26 @@ namespace Azure.Data
 {
     enum DataType {
         Null,
+        String,
         Properties,
-        String,         
+        Array,
     }
 
     // TDODO: this should implement IDictionary<string, object>
     public class DynamicData : IDynamicMetaObjectProvider, IEnumerable<string>
     {
-        DataType _type;
         object _data;
-        DataSchema _schema; // TODO: should schema be exposed? Should it be part of the Store?
+        DataType _type;
+        DataSchema _schema;
         public IDictionary<Type, DataConverter> Converters = new Dictionary<Type, DataConverter>();
 
         public DynamicData() => _type = DataType.Null;
+
+        public DynamicData(DataSchema schema)
+        {
+            _type = DataType.Null;
+            _schema = schema;
+        }
 
         public DynamicData(string text)
         {
@@ -32,14 +39,19 @@ namespace Azure.Data
             _type = DataType.String;
         }
 
-        public DynamicData(PropertyStore store)
+        public DynamicData(PropertyStore properties)
         {
-            _data = store;
+            _data = properties;
             _type = DataType.Properties;
         }
 
-        // TODO: I don't like this ctor
-        public DynamicData(DataSchema schema) : this() => _schema = schema;
+        public DynamicData(IReadOnlyDictionary<string, object> properties)
+        {
+            var store = new DictionaryStore(properties);
+            store.Freeze();
+            _data = store;
+            _type = DataType.Properties;
+        }
 
         // TODO: I dont like this ctor. Maybe we ask users to create store.
         public DynamicData(bool isReadOnly, params (string propertyName, object propertyValue)[] properties)
@@ -51,14 +63,6 @@ namespace Azure.Data
                 store.SetValue(property.propertyName, property.propertyValue);
             }
             if (isReadOnly) store.Freeze();
-            _data = store;
-            _type = DataType.Properties;
-        }
-
-        public DynamicData(IReadOnlyDictionary<string, object> properties)
-        {
-            var store = new DictionaryStore(properties);
-            store.Freeze();
             _data = store;
             _type = DataType.Properties;
         }
@@ -167,6 +171,23 @@ namespace Azure.Data
 
         private object SetValue(string propertyName, object propertyValue)
         {
+            if (_schema != null)
+            {
+                if (!_schema.TryGetPropertyType(propertyName, out var propertySchema))
+                {
+                    throw new InvalidOperationException($"Property {propertyName} does not exist");
+                }
+                if (propertySchema.IsReadOnly)
+                {
+                    throw new InvalidOperationException($"Property {propertyName} is read-only");
+                }
+                // TODO (pri 1): this type check needs to be done after type conversion
+                if (!propertySchema.PropertyType.IsAssignableFrom(propertyValue.GetType()))
+                {
+                    throw new InvalidOperationException($"Property {propertyName} is of type {propertySchema.PropertyType}");
+                }
+            }
+
             var store = _data as PropertyStore;
             if(store == null && _type == DataType.Null)
             {
@@ -177,22 +198,6 @@ namespace Azure.Data
             if (store.IsReadOnly)
             {
                 throw new InvalidOperationException($"The data is read-only");
-            }
-            if (_schema != default)
-            {
-                if (!_schema.TryGetSchema(propertyName, out var schema))
-                {
-                    throw new InvalidOperationException($"Property {propertyName} does not exist");
-                }
-                if (schema.IsReadOnly)
-                {
-                    throw new InvalidOperationException($"Property {propertyName} is read-only");
-                }
-                // TODO (pri 1): this type check needs to be done after type conversion
-                if (!schema.Type.IsAssignableFrom(propertyValue.GetType()))
-                {
-                    throw new InvalidOperationException($"Property {propertyName} is of type {schema.Type}");
-                }
             }
 
             var valueType = propertyValue.GetType();

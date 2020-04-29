@@ -21,9 +21,9 @@ namespace Azure.Data
             }
         }
 
-        protected internal override IEnumerable<string> PropertyNames => _properties.Keys;
-
         protected internal override bool IsReadOnly => false;
+
+        protected internal override IEnumerable<string> PropertyNames => _properties.Keys;
 
         internal void Freeze() => _readonly = true;
 
@@ -78,11 +78,11 @@ namespace Azure.Data
             var sb = new StringBuilder();
             sb.Append("{");
             bool first = true;
-            foreach (var propertyName in PropertyNames)
+            foreach (var property in _properties)
             {
                 if (first) first = false;
                 else sb.Append(",\n");
-                sb.Append($"\t{propertyName} : {_properties[propertyName]}");
+                sb.Append($"\t{property.Key} : {property.Value}");
             }
             sb.Append("\n}");
 

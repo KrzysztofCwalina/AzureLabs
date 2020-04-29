@@ -82,7 +82,7 @@ namespace Azure.Data
 
             public override IEnumerable<string> PropertyNames => _properties.Keys;
 
-            public override bool TryGetSchema(string propertyName, out PropertySchema schema)
+            public override bool TryGetPropertyType(string propertyName, out PropertySchema schema)
             {
                 return _properties.TryGetValue(propertyName, out schema);
             }

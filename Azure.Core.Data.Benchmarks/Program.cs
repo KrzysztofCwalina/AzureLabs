@@ -153,6 +153,9 @@ class PerfectStore : PropertyStore
         return propertyValue != null;
     }
 
+    // TODO: this cannot be implemented
+    protected override IEnumerable<string> PropertyNames => throw new NotImplementedException();
+
     protected override DynamicData CreateDynamicData(ReadOnlySpan<(string propertyName, object propertyValue)> properties)
         => throw new NotImplementedException();
 
@@ -163,8 +166,5 @@ class PerfectStore : PropertyStore
         => throw new NotImplementedException();
 
     protected override bool TryGetValueAt(int index, out object item)
-        => throw new NotImplementedException();
-
-    protected override IEnumerable<string> PropertyNames 
         => throw new NotImplementedException();
 }

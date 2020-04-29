@@ -140,6 +140,9 @@ namespace Azure.Core.Data.DataStores
             return propertyValue != null;
         }
 
+        protected internal override IEnumerable<string> PropertyNames 
+            => throw new NotImplementedException();
+
         protected sealed internal override DynamicData CreateDynamicData(ReadOnlySpan<(string propertyName, object propertyValue)> properties)
             => throw new NotImplementedException();
 
@@ -150,9 +153,6 @@ namespace Azure.Core.Data.DataStores
             => throw new NotImplementedException();
 
         protected sealed internal override bool TryGetValueAt(int index, out object item)
-            => throw new NotImplementedException();
-
-        protected sealed internal override IEnumerable<string> PropertyNames
             => throw new NotImplementedException();
     }
 }
