@@ -1,17 +1,52 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 
 namespace Azure.Data
 {
-    public abstract class DataConverter
+    public abstract class DataConverter : IReadOnlyDictionary<Type, DataConverter>
     {
         public abstract Type ForType { get; }
+
+        public IEnumerable<Type> Keys => throw new NotImplementedException();
+
+        public IEnumerable<DataConverter> Values => throw new NotImplementedException();
+
+        public int Count => throw new NotImplementedException();
+
+        public DataConverter this[Type key] => throw new NotImplementedException();
+
         public abstract DynamicData ConvertToDataType(object obj);
         public abstract object ConverFromDataType(DynamicData data);
 
-        public static ReadOnlyMemory<DataConverter> Common = new DataConverter[]
+        public bool ContainsKey(Type key)
+            => ForType == key;
+
+        public bool TryGetValue(Type key, out DataConverter value)
         {
-            new DateTimeConverter(),
-            new DateTimeOffsetConverter()
+            if(key == ForType)
+            {
+                value = this;
+                return true;
+            }
+            value = default;
+            return false;
+        }
+
+        public IEnumerator<KeyValuePair<Type, DataConverter>> GetEnumerator()
+        {
+            yield return new KeyValuePair<Type, DataConverter>(ForType, this);
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            yield return new KeyValuePair<Type, DataConverter>(ForType, this);
+        }
+
+        internal static IReadOnlyDictionary<Type, DataConverter> CommonConverters = new Dictionary<Type, DataConverter>()
+        {
+            {  typeof(DateTime), new DateTimeConverter() },
+            { typeof(DateTimeOffset), new DateTimeOffsetConverter() }
         };
     }
 
@@ -31,8 +66,7 @@ namespace Azure.Data
         public override DynamicData ConvertToDataType(object obj)
         {
             var dt = (DateTime)obj;
-            var data = new DynamicData(dt.ToString("O")).WithConverter(this);
-
+            var data = new DynamicData(dt.ToString("O"), this);
             return data;
         }
     }
@@ -53,7 +87,7 @@ namespace Azure.Data
         public override DynamicData ConvertToDataType(object obj)
         {
             var dt = (DateTimeOffset)obj;
-            var data = new DynamicData(dt.ToString("O")).WithConverter(this);
+            var data = new DynamicData(dt.ToString("O"), this);
             return data;
         }
     }

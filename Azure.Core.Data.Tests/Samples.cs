@@ -50,13 +50,11 @@ namespace Azure.Data.Tests
         [Test]
         public void S04_Converters()
         {
-            DynamicData data = new DynamicData().WithConverters(DataConverter.Common);
-
-            dynamic ddata = data;
+            dynamic data = new DynamicData();
             var time = new DateTime(2020, 4, 28, 10, 12, 50, 40); ;
 
-            ddata.Time = time;
-            var deserialized = (DateTime)ddata.Time;
+            data.Time = time;
+            var deserialized = (DateTime)data.Time;
             Assert.AreEqual(time, deserialized);
         }
 

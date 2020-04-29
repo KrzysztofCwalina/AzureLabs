@@ -23,35 +23,40 @@ namespace Azure.Data
         object _data;
         DataType _type;
         DataSchema _schema;
-        IDictionary<Type, DataConverter> _converters = new Dictionary<Type, DataConverter>();
+        IReadOnlyDictionary<Type, DataConverter> _converters;
 
-        public DynamicData() => _type = DataType.Null;
+        public DynamicData()
+        {
+            _converters = DataConverter.CommonConverters;
+            _type = DataType.Null;
+        }
 
-        public DynamicData(DataSchema schema)
+        public DynamicData(DataSchema schema) : this()
         {
             _type = DataType.Null;
             _schema = schema;
         }
 
-        public DynamicData(string text)
+        public DynamicData(string text, DataConverter converter) : this()
         {
             _data = text;
             _type = DataType.String;
+            _converters = converter;
         }
 
-        public DynamicData(PropertyStore properties)
+        public DynamicData(PropertyStore properties) : this()
         {
             _data = properties;
             _type = DataType.Properties;
         }
 
-        public DynamicData(DynamicData[] array)
+        public DynamicData(DynamicData[] array) : this()
         {
             _data = array;
             _type = DataType.Array;
         }
 
-        public DynamicData(IReadOnlyDictionary<string, object> properties)
+        public DynamicData(IReadOnlyDictionary<string, object> properties) : this()
         {
             var store = new DictionaryStore(properties);
             store.Freeze();
@@ -60,7 +65,7 @@ namespace Azure.Data
         }
 
         //// TODO: I dont like this ctor. Maybe we ask users to create store.
-        public DynamicData(bool isReadOnly, params (string propertyName, object propertyValue)[] properties)
+        public DynamicData(bool isReadOnly, params (string propertyName, object propertyValue)[] properties) : this()
         {
             var store = new DictionaryStore();
             for (int i = 0; i < properties.Length; i++)
@@ -86,22 +91,6 @@ namespace Azure.Data
             }
         }
 
-        // TODO: I don't like how the converters are handled. I think it needs to be Add/Remove collection with preinitialized converters
-        public DynamicData WithConverters(ReadOnlyMemory<DataConverter> converters)
-        {
-            var cs = converters.Span;
-            for(int i=0; i<cs.Length; i++)
-            {
-                var c = cs[i];
-                _converters.Add(c.ForType, c);
-            }
-            return this;
-        }
-        public DynamicData WithConverter(DataConverter converter)
-        {
-            _converters.Add(converter.ForType, converter);
-            return this;
-        }
         #region used by MetaObject
         private object GetValue(string propertyName)
         {
