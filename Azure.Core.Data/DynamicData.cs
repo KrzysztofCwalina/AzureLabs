@@ -10,50 +10,50 @@ using System.Diagnostics;
 
 namespace Azure.Data
 {
-    enum DataType {
-        Null,
-        String,
-        Properties,
-        Array,
+    enum DynamicDataType {
+        Null,       // DynamicData._data is null
+        String,     // DynamicData._data is string
+        Properties, // DynamicData._data is DataStore
+        Array,      // DynamicData._data is DynamicData[]
     }
 
     // TDODO: this should implement IDictionary<string, object>
     public class DynamicData : IDynamicMetaObjectProvider, IEnumerable<string>
     {
-        object _data;
-        DataType _type;
-        DataSchema _schema;
+        object _data; // one of the DynamicDataType instances
+        DynamicDataType _type;
+        DataSchema _schema; // This schema is in terms of CLR types.
         IReadOnlyDictionary<Type, DataConverter> _converters;
 
         public DynamicData()
         {
             _converters = DataConverter.CommonConverters;
-            _type = DataType.Null;
+            _type = DynamicDataType.Null;
         }
 
         public DynamicData(DataSchema schema) : this()
         {
-            _type = DataType.Null;
+            _type = DynamicDataType.Null;
             _schema = schema;
         }
 
         public DynamicData(string text, DataConverter converter) : this()
         {
             _data = text;
-            _type = DataType.String;
+            _type = DynamicDataType.String;
             _converters = converter;
         }
 
         public DynamicData(PropertyStore properties) : this()
         {
             _data = properties;
-            _type = DataType.Properties;
+            _type = DynamicDataType.Properties;
         }
 
         public DynamicData(DynamicData[] array) : this()
         {
             _data = array;
-            _type = DataType.Array;
+            _type = DynamicDataType.Array;
         }
 
         public DynamicData(IReadOnlyDictionary<string, object> properties) : this()
@@ -61,7 +61,7 @@ namespace Azure.Data
             var store = new DictionaryStore(properties);
             store.Freeze();
             _data = store;
-            _type = DataType.Properties;
+            _type = DynamicDataType.Properties;
         }
 
         //// TODO: I dont like this ctor. Maybe we ask users to create store.
@@ -75,7 +75,7 @@ namespace Azure.Data
             }
             if (isReadOnly) store.Freeze();
             _data = store;
-            _type = DataType.Properties;
+            _type = DynamicDataType.Properties;
         }
 
         public object this[string propertyName] {
@@ -146,11 +146,11 @@ namespace Azure.Data
             }
 
             var store = _data as PropertyStore;
-            if (store == null && _type == DataType.Null)
+            if (store == null && _type == DynamicDataType.Null)
             {
                 store = new DictionaryStore();
                 _data = store;
-                _type = DataType.Properties;
+                _type = DynamicDataType.Properties;
             }
             // TODO: is this really property of the store, schema, or DynamicData?
             if (store.IsReadOnly)
