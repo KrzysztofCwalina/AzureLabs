@@ -127,7 +127,26 @@ namespace Azure.Data
 
         private object SetValue(string propertyName, object propertyValue)
         {
-            var valueType = propertyValue.GetType();
+            var propertyValueType = propertyValue.GetType();
+
+            var store = _data as PropertyStore;
+            if (store == null && _type == DataType.Null)
+            {
+                store = new DictionaryStore();
+                _data = store;
+                _type = DataType.Properties;
+            }
+            // TODO: is this really property of the store, schema, or DynamicData?
+            if (store.IsReadOnly)
+            {
+                throw new InvalidOperationException($"The data is read-only");
+            }
+
+            if (!propertyValueType.IsDynamicDataType())
+            {
+                propertyValue = ToDataType(propertyValue, propertyValueType);
+                propertyValueType = typeof(DynamicData);
+            }
 
             if (_schema != null)
             {
@@ -139,31 +158,12 @@ namespace Azure.Data
                 {
                     throw new InvalidOperationException($"Property {propertyName} is read-only");
                 }
-                // TODO (pri 1): this type check needs to be done after type conversion
-                if (!propertySchema.PropertyType.IsAssignableFrom(valueType))
+                if (!propertySchema.PropertyType.IsAssignableFrom(propertyValueType))
                 {
                     throw new InvalidOperationException($"Property {propertyName} is of type {propertySchema.PropertyType}");
                 }
             }
 
-            var store = _data as PropertyStore;
-            if(store == null && _type == DataType.Null)
-            {
-                store = new DictionaryStore();
-                _data = store;
-                _type = DataType.Properties;
-            }
-
-            // TODO: is this really property of the store, schema, or DynamicData?
-            if (store.IsReadOnly)
-            {
-                throw new InvalidOperationException($"The data is read-only");
-            }
-
-            if (!valueType.IsDynamicDataType())
-            {
-                propertyValue =  ToDataType(propertyValue, valueType);
-            }
             store.SetValue(propertyName, propertyValue);
             return propertyValue;
         }

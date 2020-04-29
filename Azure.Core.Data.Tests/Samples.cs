@@ -51,7 +51,7 @@ namespace Azure.Data.Tests
         public void S04_Converters()
         {
             dynamic data = new DynamicData();
-            var time = new DateTime(2020, 4, 28, 10, 12, 50, 40); ;
+            var time = new DateTime(2020, 4, 28, 10, 12, 50, 40);
 
             data.Time = time;
             var deserialized = (DateTime)data.Time;
