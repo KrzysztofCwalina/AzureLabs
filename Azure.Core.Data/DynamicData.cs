@@ -161,7 +161,6 @@ namespace Azure.Data
             if (!propertyValueType.IsDynamicDataType())
             {
                 propertyValue = ToDataType(propertyValue, propertyValueType);
-                propertyValueType = typeof(DynamicData);
             }
 
             store.SetValue(propertyName, propertyValue);
@@ -215,7 +214,6 @@ namespace Azure.Data
                 return getProperty;
             }
 
-            // TODO: this needs to deal with primitives, natural concersions, etc.
             public override DynamicMetaObject BindConvert(ConvertBinder binder)
             {
                 var sourceInstance = Expression.Convert(Expression, LimitType);

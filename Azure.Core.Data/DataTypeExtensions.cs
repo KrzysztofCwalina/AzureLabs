@@ -16,5 +16,16 @@ namespace Azure.Data
             if (type.IsArray && IsDynamicDataPrimitive(type.GetElementType())) return true;
             return false;
         }
+        public static bool IsPrimitive(this Type type)
+        {
+            if (type == typeof(string)) return true;
+            if (type.IsPrimitive) return true;
+            return false;
+        }
+        public static bool IsPrimitiveArray(this Type type)
+        {
+            if (type.IsArray && IsPrimitive(type.GetElementType())) return true;
+            return false;
+        }
     }
 }

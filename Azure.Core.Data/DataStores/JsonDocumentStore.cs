@@ -97,7 +97,7 @@ namespace Azure.Data
         protected internal override bool TryConvertTo(Type type, out object converted)
         {
             JsonElement json = GetRoot();
-            if (json.ValueKind == JsonValueKind.Array && !DataSchema.IsPrimitiveArray(type))
+            if (json.ValueKind == JsonValueKind.Array && !type.IsPrimitiveArray())
             {
                 var items = json.GetArrayLength();
                 var array = new DynamicData[items];
@@ -150,7 +150,7 @@ namespace Azure.Data
                         value = (double)longValue;
                         return true;
                     }
-                    value = element.GetDouble(); // TODO: but the double parser is really bad!
+                    value = element.GetDouble();
                     break;
                 case JsonValueKind.Array:
                     value = new DynamicData(new JsonDocumentStore(element));
